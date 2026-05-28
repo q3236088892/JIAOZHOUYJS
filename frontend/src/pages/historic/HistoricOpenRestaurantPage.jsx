@@ -1,11 +1,32 @@
-import { useEffect, useMemo, useState } from 'react'
-import { getHistoricIndustryDetail } from '../../api/historic'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { getHistoricIndustryDetail, getHistoricHome } from '../../api/historic'
 import { buildLeftMenuFromStages } from '../../utils/historicTransform'
 import '../../styles/historic.css'
 
+function NavItem({ item }) {
+  const href = item.link_target || '/historicDistrict'
+  const isExternal = item.link_type === 'external' || /^https?:\/\//i.test(href)
+  if (isExternal) {
+    return (
+      <li>
+        <a href={href} target="_blank" rel="noopener noreferrer">{item.title}</a>
+      </li>
+    )
+  }
+  return (
+    <li>
+      <Link to={href}>{item.title}</Link>
+    </li>
+  )
+}
+
 export default function HistoricOpenRestaurantPage() {
   const [detail, setDetail] = useState({ industry: null, stages: [] })
+  const [navItems, setNavItems] = useState([])
   const [expanded, setExpanded] = useState(new Set())
+  const [activeAnchor, setActiveAnchor] = useState('')
+  const observerRef = useRef(null)
 
   useEffect(() => {
     let mounted = true
@@ -17,9 +38,11 @@ export default function HistoricOpenRestaurantPage() {
           setDetail(payload)
 
           const defaultOpened = new Set()
+          let firstAnchor = ''
           for (const stage of payload.stages || []) {
             for (const category of stage.categories || []) {
               for (const topic of category.topics || []) {
+                if (!firstAnchor) firstAnchor = topic.anchor_key
                 if (Number(topic.default_expanded) === 1) {
                   defaultOpened.add(topic.anchor_key)
                 }
@@ -27,6 +50,7 @@ export default function HistoricOpenRestaurantPage() {
             }
           }
           setExpanded(defaultOpened)
+          if (firstAnchor) setActiveAnchor(firstAnchor)
         }
       })
       .catch(() => {
@@ -34,12 +58,50 @@ export default function HistoricOpenRestaurantPage() {
         setDetail({ industry: null, stages: [] })
       })
 
+    getHistoricHome()
+      .then((res) => {
+        if (!mounted) return
+        if (res.data.code === 200) {
+          setNavItems(res.data.data?.navItems || [])
+        }
+      })
+      .catch(() => {})
+
     return () => {
       mounted = false
     }
   }, [])
 
   const leftMenu = useMemo(() => buildLeftMenuFromStages(detail.stages), [detail.stages])
+
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect()
+    const anchors = []
+    for (const stage of leftMenu) {
+      for (const category of stage.categories) {
+        for (const item of category.items) {
+          anchors.push(item.anchorKey)
+        }
+      }
+    }
+    if (!anchors.length) return
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible.length) setActiveAnchor(visible[0].target.id)
+      },
+      { rootMargin: '-80px 0px -60% 0px', threshold: [0, 0.5, 1] }
+    )
+
+    for (const a of anchors) {
+      const el = document.getElementById(a)
+      if (el) observerRef.current.observe(el)
+    }
+    return () => observerRef.current && observerRef.current.disconnect()
+  }, [leftMenu])
 
   const toggle = (anchorKey) => {
     setExpanded((prev) => {
@@ -52,6 +114,13 @@ export default function HistoricOpenRestaurantPage() {
 
   const onJumpAnchor = (event, anchorKey) => {
     event.preventDefault()
+    setActiveAnchor(anchorKey)
+    setExpanded((prev) => {
+      if (prev.has(anchorKey)) return prev
+      const next = new Set(prev)
+      next.add(anchorKey)
+      return next
+    })
     const element = document.getElementById(anchorKey)
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -60,72 +129,104 @@ export default function HistoricOpenRestaurantPage() {
 
   return (
     <div className="hd-detail-page">
-      <aside className="hd-left-menu">
-        {leftMenu.map((stage) => (
-          <div key={stage.stageKey} className="hd-left-stage">
-            <div className="hd-left-stage-title">{stage.stageTitle}</div>
-            {stage.categories.map((category) => (
-              <div key={category.categoryKey} className="hd-left-category">
-                <div className="hd-left-category-title">{category.categoryTitle}</div>
-                {category.items.map((item) => (
-                  <a key={item.anchorKey} href={`#${item.anchorKey}`} onClick={(event) => onJumpAnchor(event, item.anchorKey)}>
-                    {item.title}
-                  </a>
-                ))}
-              </div>
-            ))}
-          </div>
-        ))}
-      </aside>
+      <header className="hd-top-nav">
+        <ul>
+          {navItems.map((item) => (
+            <NavItem key={item.id} item={item} />
+          ))}
+        </ul>
+      </header>
 
-      <main className="hd-right-content">
-        <h1 className="hd-detail-title">{detail.industry?.name || '\u6211\u60f3\u5f00\u9910\u996e\u5e97'}</h1>
+      <div className="hd-detail-hero">
+        <h1>{detail.industry?.name || '我想开餐饮店'}</h1>
+      </div>
 
-        {detail.stages.map((stage) => (
-          <section key={stage.stage_key} className="hd-stage-section">
-            <div className="hd-stage-title">{stage.stage_title}</div>
-            {(stage.categories || []).map((category) => (
-              <div key={category.category_key} className="hd-category-block">
-                <h3>{category.category_title}</h3>
-                {(category.topics || []).map((topic) => (
-                  <article key={topic.anchor_key} id={topic.anchor_key} className="hd-topic-card">
-                    <button type="button" className="hd-topic-title" onClick={() => toggle(topic.anchor_key)}>
-                      <span>{topic.title}</span>
-                      <span>{expanded.has(topic.anchor_key) ? '\u25b2' : '\u25bc'}</span>
-                    </button>
+      <div className="hd-detail-content">
+        <aside className="hd-left-menu">
+          {leftMenu.map((stage) => (
+            <div key={stage.stageKey} className="hd-left-stage">
+              <div className="hd-left-stage-title">{stage.stageTitle}</div>
+              {stage.categories.map((category) => (
+                <div key={category.categoryKey} className="hd-left-category">
+                  <div className="hd-left-category-title">{category.categoryTitle}</div>
+                  {category.items.map((item) => (
+                    <a
+                      key={item.anchorKey}
+                      href={`#${item.anchorKey}`}
+                      className={activeAnchor === item.anchorKey ? 'is-active' : ''}
+                      onClick={(event) => onJumpAnchor(event, item.anchorKey)}
+                    >
+                      {item.title}
+                    </a>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
+        </aside>
 
-                    {expanded.has(topic.anchor_key) && (
-                      <div className="hd-topic-body">
-                        {topic.description ? <p>{topic.description}</p> : null}
+        <main className="hd-right-content">
+          {detail.stages.map((stage) => (
+            <section key={stage.stage_key} className="hd-stage-section">
+              <div className="hd-stage-title">{stage.stage_title}</div>
+              {(stage.categories || []).map((category) => (
+                <div key={category.category_key} className="hd-category-block">
+                  <h3>{category.category_title}</h3>
+                  {(category.topics || []).map((topic) => {
+                    const isOpen = expanded.has(topic.anchor_key)
+                    return (
+                      <article key={topic.anchor_key} id={topic.anchor_key} className="hd-topic-card">
+                        <button
+                          type="button"
+                          className="hd-topic-title"
+                          onClick={() => toggle(topic.anchor_key)}
+                        >
+                          <span>{topic.title}</span>
+                          <span className={`hd-topic-title__arrow${isOpen ? ' is-open' : ''}`}>▼</span>
+                        </button>
 
-                        {(topic.links || []).map((lnk) => (
-                          <a
-                            key={lnk.id}
-                            href={lnk.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hd-service-link"
-                          >
-                            <span>{lnk.label}</span>
-                            <span>{'\u2192'}</span>
-                          </a>
-                        ))}
+                        {isOpen && (
+                          <div className="hd-topic-body">
+                            {topic.description ? <p>{topic.description}</p> : null}
 
-                        {(topic.infoFields || []).map((field) => (
-                          <div key={field.id} className="hd-topic-info-field">
-                            <span className="label">{field.field_label}</span>
-                            <span className="value">{field.field_value}</span>
+                            {(topic.links || []).map((lnk) => (
+                              <a
+                                key={lnk.id}
+                                href={lnk.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hd-service-link"
+                              >
+                                <span>{lnk.label}</span>
+                                <span className="hd-service-link__arrow">→</span>
+                              </a>
+                            ))}
+
+                            {(topic.infoFields || []).map((field) => (
+                              <div key={field.id} className="hd-topic-info-field">
+                                <span className="label">{field.field_label}</span>
+                                <span className="value">{field.field_value}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </article>
-                ))}
-              </div>
-            ))}
-          </section>
-        ))}
-      </main>
+                        )}
+                      </article>
+                    )
+                  })}
+                </div>
+              ))}
+            </section>
+          ))}
+        </main>
+      </div>
+
+      <footer className="hd-footer">
+        <div className="hd-footer__divider1" />
+        <div className="hd-footer__divider2" />
+        <div className="hd-footer__body">
+          青岛市市南区人民政府 主办 · 历史城区文旅产业服务“一类事”
+        </div>
+      </footer>
     </div>
   )
 }
