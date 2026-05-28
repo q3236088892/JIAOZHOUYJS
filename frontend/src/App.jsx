@@ -22,6 +22,12 @@ function App() {
         <Route path="/historicDistrict" element={<HistoricHomePage />} />
         <Route path="/historicDistrict/openRestaurant" element={<HistoricOpenRestaurantPage />} />
         <Route path="/admin" element={<AdminHistoricPage />} />
+
+        {/* 兼容带前缀访问路径 */}
+        <Route path="/one_type_event" element={<Navigate to="/one_type_event/historicDistrict" replace />} />
+        <Route path="/one_type_event/historicDistrict" element={<HistoricHomePage />} />
+        <Route path="/one_type_event/historicDistrict/openRestaurant" element={<HistoricOpenRestaurantPage />} />
+        <Route path="/one_type_event/openRestaurant" element={<Navigate to="/one_type_event/historicDistrict/openRestaurant" replace />} />
       </Routes>
     </ConfigProvider>
   )
