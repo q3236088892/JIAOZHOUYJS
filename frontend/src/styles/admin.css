@@ -1,0 +1,30 @@
+.admin-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+  padding: 24px;
+}
+
+.admin-page h1 {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.admin-preview-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-preview-panel h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.admin-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
