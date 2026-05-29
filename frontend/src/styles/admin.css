@@ -266,3 +266,102 @@
 .cd-home-body {
   flex: 1;
 }
+
+/* ── 左侧菜单折叠 + 层级美化 ── */
+
+.hd-left-arrow {
+  font-size: 12px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.hd-left-arrow--sm {
+  font-size: 10px;
+  width: 14px;
+}
+
+.hd-left-stage-title {
+  justify-content: flex-start !important;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 覆盖 historic.css 的 ::before */
+.hd-left-stage-title::before,
+.hd-left-category-title::before {
+  display: none !important;
+}
+
+.hd-left-stage-title:hover {
+  filter: brightness(1.1);
+}
+
+.hd-left-category-title {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.hd-left-category-title:hover {
+  background: #f0f5ff;
+  border-radius: 8px;
+}
+
+.hd-left-item {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #1f2d3d;
+  font-size: 13px;
+  padding: 8px 12px 8px 42px;
+  margin: 1px 12px;
+  border-radius: 6px;
+  transition: all 0.25s ease;
+  position: relative;
+  line-height: 1.5;
+}
+
+/* 覆盖 historic.css 的 ::before 伪元素点 */
+.hd-left-item::before {
+  display: none !important;
+}
+
+.hd-left-item-dot {
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.hd-left-item:hover {
+  background: #f0f5ff;
+  color: #427aff;
+}
+
+.hd-left-item:hover .hd-left-item-dot {
+  background: #427aff;
+}
+
+.hd-left-item.is-active {
+  background: linear-gradient(135deg, #427aff 0%, #1584da 100%);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(66, 122, 255, 0.3);
+}
+
+.hd-left-item.is-active .hd-left-item-dot {
+  background: #fff;
+  width: 6px;
+  height: 6px;
+}

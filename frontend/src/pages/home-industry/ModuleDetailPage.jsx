@@ -9,7 +9,7 @@ const STAGE_EMOJIS = ['📝', '📋', '📂', '📑', '🗂️', '📄', '📌',
 
 /**
  * Build left menu structure from tree data.
- * Maps: Level1=stage, Level2=category, deeper=items (leaf anchors)
+ * Level1 = stage header, Level2 = category, Level3 = branch menu items only (no leaves)
  */
 function buildLeftMenu(tree) {
   if (!tree || tree.length === 0) return []
@@ -19,32 +19,13 @@ function buildLeftMenu(tree) {
     categories: (level1.children || []).filter(n => n.node_type === 'branch').map((level2) => ({
       categoryKey: `cat-${level2.id}`,
       categoryTitle: level2.title,
-      items: collectLeafAnchors(level2.children || [])
+      items: (level2.children || []).filter(n => n.node_type === 'branch').map((child) => ({
+        anchorKey: `node-${child.id}`,
+        title: child.title,
+        nodeId: child.id
+      }))
     }))
   }))
-}
-
-/**
- * Recursively collect leaf nodes as anchor targets.
- * If a branch has leaves directly, they become menu items.
- * If a branch only has sub-branches, drill deeper.
- */
-function collectLeafAnchors(nodes) {
-  const items = []
-  for (const node of nodes) {
-    if (node.node_type === 'leaf') {
-      items.push({ anchorKey: `node-${node.id}`, title: node.title, nodeId: node.id })
-    } else if (node.children && node.children.length > 0) {
-      // Check if this branch has any leaf descendants
-      const leaves = collectLeafAnchors(node.children)
-      if (leaves.length > 0) {
-        items.push(...leaves)
-      } else {
-        items.push({ anchorKey: `node-${node.id}`, title: node.title, nodeId: node.id })
-      }
-    }
-  }
-  return items
 }
 
 /**
@@ -103,29 +84,26 @@ function LeafContent({ node }) {
 }
 
 /**
- * Render a branch node's children as topic cards.
- * Leaf children become expandable cards.
- * Branch children are recursively rendered.
+ * Render a node as a topic card.
+ * Leaf: directly show content (no expand/collapse).
+ * Branch: expandable accordion to show children.
  */
 function TopicCard({ node, emoji, expanded, onToggle }) {
-  const content = node.content || {}
   const isOpen = expanded.has(`node-${node.id}`)
 
+  // Leaf node: show title + content directly (hide body if empty)
   if (node.node_type === 'leaf') {
+    const content = node.content || {}
+    const hasBody = content.link_url || content.body || (content.fields && content.fields.length > 0) || content.department
     return (
       <article id={`node-${node.id}`} className="hd-topic-card">
-        <button
-          type="button"
-          className="hd-topic-title"
-          onClick={() => onToggle(`node-${node.id}`)}
-        >
+        <div className="hd-topic-title" style={{ cursor: 'default' }}>
           <span className="hd-topic-title__text">
             <span className="hd-topic-title__icon" aria-hidden="true">{emoji}</span>
             <span className="hd-topic-title__name">{node.title}</span>
           </span>
-          <span className={`hd-topic-title__arrow${isOpen ? ' is-open' : ''}`}>▼</span>
-        </button>
-        {isOpen && (
+        </div>
+        {hasBody && (
           <div className="hd-topic-body">
             <LeafContent node={node} />
           </div>
@@ -134,19 +112,34 @@ function TopicCard({ node, emoji, expanded, onToggle }) {
     )
   }
 
-  // Branch node: render its children
+  // Branch node: expandable to show children
   return (
-    <div>
-      {(node.children || []).map((child, idx) => (
-        <TopicCard
-          key={child.id}
-          node={child}
-          emoji={STAGE_EMOJIS[idx % STAGE_EMOJIS.length]}
-          expanded={expanded}
-          onToggle={onToggle}
-        />
-      ))}
-    </div>
+    <article id={`node-${node.id}`} className="hd-topic-card">
+      <button
+        type="button"
+        className="hd-topic-title"
+        onClick={() => onToggle(`node-${node.id}`)}
+      >
+        <span className="hd-topic-title__text">
+          <span className="hd-topic-title__icon" aria-hidden="true">{emoji}</span>
+          <span className="hd-topic-title__name">{node.title}</span>
+        </span>
+        <span className={`hd-topic-title__arrow${isOpen ? ' is-open' : ''}`}>▼</span>
+      </button>
+      {isOpen && (
+        <div className="hd-topic-body">
+          {(node.children || []).map((child, idx) => (
+            <TopicCard
+              key={child.id}
+              node={child}
+              emoji={STAGE_EMOJIS[idx % STAGE_EMOJIS.length]}
+              expanded={expanded}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
+      )}
+    </article>
   )
 }
 
@@ -193,6 +186,7 @@ export default function ModuleDetailPage() {
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(new Set())
   const [activeAnchor, setActiveAnchor] = useState('')
+  const [menuCollapsed, setMenuCollapsed] = useState(new Set())
   const observerRef = useRef(null)
   const programmaticScrollUntil = useRef(0)
 
@@ -224,6 +218,15 @@ export default function ModuleDetailPage() {
             setActiveAnchor(firstAnchor)
             setExpanded(new Set([firstAnchor]))
           }
+          // Default: first stage expanded, others collapsed
+          const collapsed = new Set()
+          menu.forEach((s, i) => {
+            if (i > 0) collapsed.add(s.stageKey)
+            s.categories.forEach((c, j) => {
+              if (j > 0) collapsed.add(c.categoryKey)
+            })
+          })
+          setMenuCollapsed(collapsed)
         }
       })
       .catch(() => {})
@@ -277,6 +280,15 @@ export default function ModuleDetailPage() {
     })
   }
 
+  const toggleMenu = (key) => {
+    setMenuCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   const onJumpAnchor = (event, anchorKey) => {
     event.preventDefault()
     setActiveAnchor(anchorKey)
@@ -324,26 +336,47 @@ export default function ModuleDetailPage() {
       <div className="hd-detail-content">
         <aside className="hd-left-menu">
           <div className="hd-left-menu__inner">
-            {leftMenu.map((stage) => (
-              <div key={stage.stageKey} className="hd-left-stage">
-                <div className="hd-left-stage-title">{stage.stageTitle}</div>
-                {stage.categories.map((category) => (
-                  <div key={category.categoryKey} className="hd-left-category">
-                    <div className="hd-left-category-title">{category.categoryTitle}</div>
-                    {category.items.map((item) => (
-                      <a
-                        key={item.anchorKey}
-                        href={`#${item.anchorKey}`}
-                        className={activeAnchor === item.anchorKey ? 'is-active' : ''}
-                        onClick={(event) => onJumpAnchor(event, item.anchorKey)}
-                      >
-                        {item.title}
-                      </a>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ))}
+            {leftMenu.map((stage) => {
+              const stageCollapsed = menuCollapsed.has(stage.stageKey)
+              return (
+                <div key={stage.stageKey} className="hd-left-stage">
+                  <a
+                    href={`#${stage.stageKey}`}
+                    className={`hd-left-stage-title${stageCollapsed ? ' is-collapsed' : ''}`}
+                    onClick={(e) => { e.preventDefault(); toggleMenu(stage.stageKey); onJumpAnchor(e, stage.stageKey) }}
+                  >
+                    <span className="hd-left-arrow">{stageCollapsed ? '▸' : '▾'}</span>
+                    <span>{stage.stageTitle}</span>
+                  </a>
+                  {!stageCollapsed && stage.categories.map((category) => {
+                    const catCollapsed = menuCollapsed.has(category.categoryKey)
+                    return (
+                      <div key={category.categoryKey} className="hd-left-category">
+                        <a
+                          href={`#${category.categoryKey}`}
+                          className={`hd-left-category-title${catCollapsed ? ' is-collapsed' : ''}`}
+                          onClick={(e) => { e.preventDefault(); toggleMenu(category.categoryKey) }}
+                        >
+                          <span className="hd-left-arrow hd-left-arrow--sm">{catCollapsed ? '▸' : '▾'}</span>
+                          <span>{category.categoryTitle}</span>
+                        </a>
+                        {!catCollapsed && category.items.map((item) => (
+                          <a
+                            key={item.anchorKey}
+                            href={`#${item.anchorKey}`}
+                            className={`hd-left-item${activeAnchor === item.anchorKey ? ' is-active' : ''}`}
+                            onClick={(event) => onJumpAnchor(event, item.anchorKey)}
+                          >
+                            <span className="hd-left-item-dot" />
+                            <span>{item.title}</span>
+                          </a>
+                        ))}
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
           </div>
         </aside>
 
