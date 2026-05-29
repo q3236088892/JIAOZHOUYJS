@@ -29,3 +29,6 @@ Thumbs.db
 
 # local brainstorming artifacts
 .superpowers/
+
+# local git worktrees
+.worktrees/
