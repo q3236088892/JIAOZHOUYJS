@@ -161,3 +161,7 @@ npm test
 1. 使用 `npm run dev` 启动开发模式，后端支持文件监听自动重启
 2. 前端修改会通过 Vite HMR 热更新，无需手动刷新
 3. 确保后端先启动，前端的代理功能才能正常工作
+
+
+http://localhost:3000/homeIndustry
+http://localhost:3000/admin/cd

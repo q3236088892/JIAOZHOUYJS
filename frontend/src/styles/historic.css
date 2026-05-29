@@ -322,29 +322,43 @@
 }
 
 .hd-left-menu {
-  width: 260px;
+  width: 268px;
   background: #fff;
   padding: 0;
   position: sticky;
   top: 80px;
   align-self: flex-start;
-  border-radius: 14px;
-  box-shadow: 0 6px 20px rgba(9, 114, 203, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(9, 114, 203, 0.12), 0 2px 8px rgba(9, 114, 203, 0.06);
+  border: 1px solid rgba(9, 114, 203, 0.1);
   max-height: calc(100vh - 100px);
   overflow-y: auto;
 }
 
-.hd-left-menu__inner {
-  padding: 8px 0 16px;
+.hd-left-menu::-webkit-scrollbar {
+  width: 6px;
 }
 
+.hd-left-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hd-left-menu::-webkit-scrollbar-thumb {
+  background: #c1d7f0;
+  border-radius: 3px;
+}
+
+.hd-left-menu::-webkit-scrollbar-thumb:hover {
+  background: #97c1e8;
+}
+
+.hd-left-menu__inner {
+  padding: 10px 0 18px;
+}
+
+/* ============== 左侧菜单：一级大标题（Stage） ============== */
 .hd-left-stage {
   padding: 6px 0;
-}
-
-.hd-left-stage + .hd-left-stage {
-  margin-top: 4px;
-  border-top: 1px solid #eef2f8;
 }
 
 .hd-left-stage-title {
@@ -352,86 +366,208 @@
   align-items: center;
   gap: 10px;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
   color: #fff;
   background: linear-gradient(135deg, #0972cb 0%, #1584da 100%);
-  padding: 12px 18px;
-  margin: 8px 12px 10px;
+  padding: 12px 16px;
+  margin: 6px 10px 8px;
   border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(21, 132, 218, 0.18);
+  box-shadow: 0 4px 12px rgba(21, 132, 218, 0.22);
+  letter-spacing: 0.5px;
 }
 
 .hd-left-stage-title::before {
   content: "";
-  width: 6px;
-  height: 18px;
-  background: rgba(255, 255, 255, 0.85);
+  width: 5px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 3px;
   flex-shrink: 0;
 }
 
+/* ============== 左侧菜单：二级分类（Category） ============== */
 .hd-left-category {
   margin-bottom: 4px;
 }
 
 .hd-left-category-title {
-  color: #0972cb;
+  color: #1584da;
   font-size: 12px;
-  font-weight: 600;
-  padding: 10px 18px 6px;
-  margin: 0 12px;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  padding: 10px 16px 6px;
+  margin: 0 10px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  border-bottom: 2px solid rgba(9, 114, 203, 0.1);
 }
 
+/* ============== 左侧菜单：三级项目（Item） ============== */
 .hd-left-menu a {
   display: flex;
   align-items: center;
   text-decoration: none;
-  color: #1f2d3d;
+  color: #3d4f5f;
   font-size: 14px;
-  padding: 10px 18px 10px 32px;
-  margin: 2px 12px;
+  padding: 10px 16px 10px 28px;
+  margin: 2px 10px;
   border-radius: 8px;
-  transition: all 0.25s ease;
+  transition: color 0.25s ease, font-weight 0.2s ease;
   position: relative;
-  line-height: 1.5;
+  line-height: 1.4;
+  background: #f8fafc;
+  border: 1px solid transparent;
+  overflow: hidden;
 }
 
 .hd-left-menu a::before {
   content: "";
   position: absolute;
-  left: 18px;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(135deg, #e8f4fd 0%, #d6ebff 100%);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
+  border-radius: 8px;
+}
+
+.hd-left-menu a::after {
+  content: "";
+  position: absolute;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #cbd5e1;
+  background: #94a3b8;
   transition: all 0.25s ease;
+  z-index: 1;
+}
+
+.hd-left-menu a span {
+  transition: transform 0.25s ease, color 0.25s ease;
+  display: inline-block;
 }
 
 .hd-left-menu a:hover {
-  background: #f0f5ff;
-  color: #427aff;
-}
-
-.hd-left-menu a.is-active {
-  background: linear-gradient(135deg, #427aff 0%, #1584da 100%);
-  color: #fff;
+  color: #0972cb;
+  border-color: #b3d7f5;
   font-weight: 600;
-  box-shadow: 0 4px 10px rgba(66, 122, 255, 0.3);
 }
 
 .hd-left-menu a:hover::before {
-  background: #427aff;
+  width: 100%;
 }
 
-.hd-left-menu a.is-active::before {
+.hd-left-menu a:hover span {
+  transform: translateX(4px);
+  color: #0972cb;
+}
+
+.hd-left-menu a:hover::after {
+  background: #1584da;
+  box-shadow: 0 0 6px rgba(21, 132, 218, 0.4);
+}
+
+.hd-left-menu a.is-active {
+  background: linear-gradient(135deg, #0972cb 0%, #1584da 100%);
+  color: #fff;
+  font-weight: 600;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(21, 132, 218, 0.3);
+}
+
+.hd-left-menu a.is-active span {
+  color: #fff;
+  transform: translateX(4px);
+}
+
+.hd-left-menu a.is-active::after {
   background: #fff;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+/* 子分类下的项目缩进 */
+.hd-left-category a {
+  padding-left: 36px;
+}
+
+.hd-left-category a::after {
+  left: 24px;
+}
+
+/* 四级深层项目（如果有的话） */
+.hd-left-subcategory {
+  margin-left: 12px;
+}
+
+.hd-left-subcategory a {
+  padding-left: 44px;
+  font-size: 13px;
+  color: #5a6b7a;
+  background: #f1f5f9;
+}
+
+.hd-left-subcategory a::after {
+  left: 32px;
+  width: 5px;
+  height: 5px;
+  background: #cbd5e1;
+}
+
+.hd-left-subcategory a:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2ecf8 100%);
+  color: #1584da;
+}
+
+.hd-left-subcategory a.is-active {
+  background: linear-gradient(135deg, #1584da 0%, #0ea5e9 100%);
+  color: #fff;
+}
+
+/* ============== 回到顶部按钮 ============== */
+.hd-back-to-top {
+  position: fixed;
+  right: 40px;
+  bottom: 40px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #2a2a2a;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  transition: all 0.3s ease;
+  opacity: 1;
+  z-index: 900;
+}
+
+.hd-back-to-top svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hd-back-to-top:hover {
+  background: #1a1a1a;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  transform: translateY(-2px);
+}
+
+.hd-back-to-top:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 /* 右侧内容 */
@@ -493,6 +629,14 @@
 .hd-topic-card {
   margin-bottom: 14px;
   scroll-margin-top: 80px;
+}
+
+.hd-topic-card--link {
+  margin-bottom: 8px;
+}
+
+.hd-topic-card--link .hd-service-link {
+  margin-bottom: 0;
 }
 
 .hd-topic-title {

@@ -7,6 +7,19 @@ import '../../styles/historic.css'
 const STAGE_VARIANTS = ['hd-stage-section--alt1', 'hd-stage-section--alt2', 'hd-stage-section--alt3', 'hd-stage-section--alt4']
 const STAGE_EMOJIS = ['📝', '📋', '📂', '📑', '🗂️', '📄']
 
+function BackToTop() {
+  return (
+    <button
+      type="button"
+      className="hd-back-to-top"
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      aria-label="回到顶部"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+    </button>
+  )
+}
+
 function NavItem({ item }) {
   const href = item.link_target || '/historicDistrict'
   const isExternal = item.link_type === 'external' || /^https?:\/\//i.test(href)
@@ -164,7 +177,7 @@ export default function HistoricOpenRestaurantPage() {
                         className={activeAnchor === item.anchorKey ? 'is-active' : ''}
                         onClick={(event) => onJumpAnchor(event, item.anchorKey)}
                       >
-                        {item.title}
+                        <span>{item.title}</span>
                       </a>
                     ))}
                   </div>
@@ -255,6 +268,8 @@ export default function HistoricOpenRestaurantPage() {
           青岛市市南区人民政府 主办 · 历史城区文旅产业服务“一类事”
         </div>
       </footer>
+
+      <BackToTop />
     </div>
   )
 }
