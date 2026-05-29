@@ -26,3 +26,6 @@ coverage/
 # editor/system
 .DS_Store
 Thumbs.db
+
+# local brainstorming artifacts
+.superpowers/
