@@ -4,6 +4,8 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { ensureHistoricTables } from './modules/historic/schema.js'
 import { ensureHistoricSeed } from './modules/historic/seed.js'
+import { ensureHomeIndustryTables } from './modules/home-industry/schema.js'
+import { ensureHomeIndustrySeed } from './modules/home-industry/seed.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const dbPath = path.join(__dirname, 'data', 'events.db')
@@ -90,6 +92,8 @@ export function querySql(sql, params = []) {
 initEventsTable()
 ensureHistoricTables(db)
 ensureHistoricSeed(db)
+ensureHomeIndustryTables(db)
+ensureHomeIndustrySeed(db)
 saveDb()
 
 export function getAll() {

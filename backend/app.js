@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url'
 import { getAll, getById, insert, update, remove } from './db.js'
 import historicPublicRoutes from './modules/historic/public-routes.js'
 import historicAdminRoutes from './modules/historic/admin-routes.js'
+import homePublicRoutes from './modules/home-industry/public-routes.js'
+import homeAdminRoutes from './modules/home-industry/admin-routes.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const uploadsDir = path.join(__dirname, 'uploads')
@@ -93,6 +95,8 @@ export function createApp() {
 
   app.use('/api/historic/public', historicPublicRoutes)
   app.use('/api/admin/historic', historicAdminRoutes)
+  app.use('/api/cd/public', homePublicRoutes)
+  app.use('/api/admin/cd', homeAdminRoutes)
 
   app.use('/uploads', express.static(uploadsDir))
   app.use((err, req, res, next) => {

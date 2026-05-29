@@ -8,6 +8,9 @@ import EventForm from './pages/EventForm'
 import HistoricHomePage from './pages/historic/HistoricHomePage'
 import HistoricOpenRestaurantPage from './pages/historic/HistoricOpenRestaurantPage'
 import AdminHistoricPage from './pages/admin/AdminHistoricPage'
+import AdminHomeIndustryPage from './pages/admin/AdminHomeIndustryPage'
+import HomeIndustryHomePage from './pages/home-industry/HomeIndustryHomePage'
+import ModuleDetailPage from './pages/home-industry/ModuleDetailPage'
 import './styles/index.css'
 
 function App() {
@@ -22,6 +25,9 @@ function App() {
         <Route path="/historicDistrict" element={<HistoricHomePage />} />
         <Route path="/historicDistrict/openRestaurant" element={<HistoricOpenRestaurantPage />} />
         <Route path="/admin" element={<AdminHistoricPage />} />
+        <Route path="/admin/cd" element={<AdminHomeIndustryPage />} />
+        <Route path="/homeIndustry" element={<HomeIndustryHomePage />} />
+        <Route path="/homeIndustry/:moduleCode" element={<ModuleDetailPage />} />
 
         {/* 兼容带前缀访问路径 */}
         <Route path="/one_type_event" element={<Navigate to="/one_type_event/historicDistrict" replace />} />
