@@ -192,6 +192,8 @@ export default function ModuleDetailPage() {
 
   const leftMenu = useMemo(() => buildLeftMenu(tree), [tree])
 
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
+
   useEffect(() => {
     setLoading(true)
     setExpanded(new Set())
@@ -390,6 +392,15 @@ export default function ModuleDetailPage() {
           胶州市家居产业服务"一类事"
         </div>
       </footer>
+
+      <button
+        type="button"
+        className="hd-back-to-top"
+        onClick={scrollToTop}
+        aria-label="回到顶部"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+      </button>
     </div>
   )
 }
