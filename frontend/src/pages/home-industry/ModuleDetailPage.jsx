@@ -77,6 +77,15 @@ function BlocksContent({ body }) {
   try {
     blocks = JSON.parse(body)
     if (!Array.isArray(blocks)) return <p style={{ whiteSpace: 'pre-wrap' }}>{body}</p>
+    // Fix double-encoded blocks: single text block whose content is a JSON string of actual blocks
+    if (blocks.length === 1 && blocks[0].type === 'text' && typeof blocks[0].content === 'string') {
+      try {
+        const inner = JSON.parse(blocks[0].content)
+        if (Array.isArray(inner) && inner.length > 0 && inner[0].type) {
+          blocks = inner
+        }
+      } catch {}
+    }
   } catch {
     return <p style={{ whiteSpace: 'pre-wrap' }}>{body}</p>
   }

@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react'
-import { Button, Form, Input, Select, Space, Divider, message, Popconfirm, Upload } from 'antd'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { Button, Form, Input, Select, Space, Divider, message, Popconfirm } from 'antd'
 import {
   PlusOutlined, MinusCircleOutlined, SaveOutlined, DeleteOutlined,
   HolderOutlined, ArrowUpOutlined, ArrowDownOutlined,
@@ -17,6 +17,7 @@ const { TextArea } = Input
 
 function normalizeNodeContent(content = {}) {
   const fields = content.fields || []
+  if (content.content_type === 'blocks') return { ...content, fields }
   if (content.body && !content.link_url && content.content_type !== 'link' && fields.length === 0) {
     return { ...content, content_type: 'richtext', fields }
   }
@@ -42,11 +43,24 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 }
 
+function unwrapDoubleEncodedBlocks(blocks) {
+  // Fix double-encoded blocks: single text block whose content is a JSON string of actual blocks
+  if (blocks.length === 1 && blocks[0].type === 'text' && typeof blocks[0].content === 'string') {
+    try {
+      const inner = JSON.parse(blocks[0].content)
+      if (Array.isArray(inner) && inner.length > 0 && inner[0].type) {
+        return inner
+      }
+    } catch {}
+  }
+  return blocks
+}
+
 function convertToBlocks(content) {
   if (content.content_type === 'blocks') {
     try {
       const parsed = JSON.parse(content.body)
-      if (Array.isArray(parsed)) return parsed
+      if (Array.isArray(parsed)) return unwrapDoubleEncodedBlocks(parsed)
     } catch {
       return [{ id: generateId(), type: 'text', content: content.body || '' }]
     }
@@ -89,45 +103,53 @@ function TextBlockEditor({ block, onChange }) {
 }
 
 function ImageBlockEditor({ block, onChange }) {
-  const handleUpload = async (info) => {
-    if (info.file.status === 'done') {
-      const res = info.file.response
-      if (res.code === 200) {
-        onChange({ ...block, url: res.data.url })
+  const fileInputRef = useRef(null)
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const res = await uploadCdImage(file)
+      if (res.data.code === 200) {
+        onChange({ ...block, url: res.data.data.url })
       }
+    } catch {
+      message.error('图片上传失败')
     }
+    e.target.value = ''
   }
 
   return (
     <div>
       {block.url && (
-        <img src={block.url} alt={block.caption || ''} className="ce-block-image-preview" />
+        <div style={{ marginBottom: 8, border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden', background: '#fafafa' }}>
+          <img
+            src={block.url}
+            alt={block.caption || ''}
+            style={{ display: 'block', maxWidth: '100%', maxHeight: 200, objectFit: 'contain', margin: '0 auto' }}
+            onError={e => { e.target.style.display = 'none' }}
+          />
+        </div>
       )}
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <Upload
-          accept="image/*"
-          showUploadList={false}
-          customRequest={({ file, onSuccess }) => {
-            uploadCdImage(file).then(res => {
-              if (res.data.code === 200) {
-                onChange({ ...block, url: res.data.data.url })
-              }
-              onSuccess(res.data)
-            })
-          }}
-          onChange={handleUpload}
-        >
-          <Button icon={<UploadOutlined />} size="small">
-            {block.url ? '更换图片' : '上传图片'}
-          </Button>
-        </Upload>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileSelect} />
+        <Button icon={<UploadOutlined />} size="small" onClick={() => fileInputRef.current?.click()}>
+          {block.url ? '更换图片' : '上传图片'}
+        </Button>
         <Input
-          value={block.caption}
-          onChange={e => onChange({ ...block, caption: e.target.value })}
-          placeholder="图片说明（可选）"
+          value={block.url}
+          onChange={e => onChange({ ...block, url: e.target.value })}
+          placeholder="图片地址"
           size="small"
+          style={{ flex: 1 }}
         />
-      </Space>
+      </div>
+      <Input
+        value={block.caption}
+        onChange={e => onChange({ ...block, caption: e.target.value })}
+        placeholder="图片说明（可选）"
+        size="small"
+      />
     </div>
   )
 }
@@ -252,7 +274,18 @@ export default function ContentEditor({ node, onRefresh }) {
   useEffect(() => {
     if (!node) return
     const content = getNodeContent(node)
-    const ct = content.content_type || 'info'
+    let ct = content.content_type || 'info'
+
+    // Auto-detect: body is JSON blocks array even if content_type isn't 'blocks'
+    if (ct !== 'blocks' && content.body) {
+      try {
+        const parsed = JSON.parse(content.body)
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type) {
+          ct = 'blocks'
+        }
+      } catch {}
+    }
+
     setContentType(ct)
 
     form.setFieldsValue({
@@ -323,6 +356,9 @@ export default function ContentEditor({ node, onRefresh }) {
     try {
       const values = await form.validateFields()
 
+      // Use the effective content type (auto-detected may differ from form value)
+      const effectiveType = contentType
+
       await updateAdminCdNode(node.id, {
         title: values.title,
         node_type: values.node_type,
@@ -331,21 +367,21 @@ export default function ContentEditor({ node, onRefresh }) {
 
       if (values.node_type === 'leaf') {
         const contentData = {
-          content_type: values.content_type,
+          content_type: effectiveType,
           summary: values.summary || null,
           department: values.department || null,
           remark: values.remark || null
         }
 
-        if (values.content_type === 'link') {
+        if (effectiveType === 'link') {
           contentData.link_url = values.link_url || null
           contentData.link_label = values.link_label || null
           contentData.link_target = values.link_target || '_blank'
-        } else if (values.content_type === 'richtext') {
+        } else if (effectiveType === 'richtext') {
           contentData.body = values.body || null
-        } else if (values.content_type === 'blocks') {
+        } else if (effectiveType === 'blocks') {
           contentData.body = JSON.stringify(blocks)
-        } else if (values.content_type === 'info') {
+        } else if (effectiveType === 'info') {
           const fields = legacyFields.filter(f => f.field_label && f.field_value).map((f, i) => ({
             field_key: f.field_key || `field_${i}`,
             field_label: f.field_label,
@@ -560,7 +596,7 @@ export default function ContentEditor({ node, onRefresh }) {
             </div>
             <div className="ce-meta-item">
               <span className="ce-meta-label">内容类型:</span>
-              <span className="ce-meta-value">{node.content_type || node.content?.content_type || '-'}</span>
+              <span className="ce-meta-value">{{ blocks: '区块内容', link: '链接', info: '结构化信息', richtext: '富文本' }[contentType] || contentType || '-'}</span>
             </div>
             <div className="ce-meta-item">
               <span className="ce-meta-label">创建时间:</span>
