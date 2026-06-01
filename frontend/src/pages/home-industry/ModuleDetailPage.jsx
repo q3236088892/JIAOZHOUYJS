@@ -28,11 +28,49 @@ function buildLeftMenu(tree) {
   }))
 }
 
+function normalizeNodeContent(content = {}) {
+  const fields = content.fields || []
+  if (content.body && !content.link_url && content.content_type !== 'link' && fields.length === 0) {
+    return { ...content, content_type: 'richtext', fields }
+  }
+  return { ...content, fields }
+}
+
+function getNodeContent(node) {
+  const content = node.content || {
+    content_type: node.content_type,
+    summary: node.summary,
+    department: node.department,
+    remark: node.remark,
+    link_url: node.link_url,
+    link_label: node.link_label,
+    link_target: node.link_target,
+    body: node.body,
+    fields: node.fields || []
+  }
+
+  return normalizeNodeContent(content)
+}
+
+function normalizeText(value) {
+  return String(value || '').replace(/\s+/g, '')
+}
+
+function isBodyOnlyLeaf(node, content) {
+  return Boolean(
+    content.body &&
+    !node.description &&
+    !content.link_url &&
+    (!content.fields || content.fields.length === 0) &&
+    normalizeText(node.title) === normalizeText(content.body)
+  )
+}
+
 /**
  * Render leaf node content: link / info fields / richtext
  */
 function LeafContent({ node }) {
-  const content = node.content || {}
+  const content = getNodeContent(node)
 
   return (
     <>
@@ -93,8 +131,40 @@ function TopicCard({ node, emoji, expanded, onToggle }) {
 
   // Leaf node: show title + content directly (hide body if empty)
   if (node.node_type === 'leaf') {
-    const content = node.content || {}
-    const hasBody = content.link_url || content.body || (content.fields && content.fields.length > 0) || content.department
+    const content = getNodeContent(node)
+    const isLink = content.content_type === 'link' && content.link_url
+    const bodyOnly = isBodyOnlyLeaf(node, content)
+    const hasBody = node.description || content.link_url || content.body || (content.fields && content.fields.length > 0) || content.department
+
+    if (isLink) {
+      return (
+        <article id={`node-${node.id}`} className="hd-topic-card">
+          <a
+            href={content.link_url}
+            target={content.link_target || '_blank'}
+            rel="noopener noreferrer"
+            className="hd-topic-title hd-topic-title--link"
+          >
+            <span className="hd-topic-title__text">
+              <span className="hd-topic-title__icon" aria-hidden="true">{emoji}</span>
+              <span className="hd-topic-title__name">{content.link_label || node.title}</span>
+            </span>
+            <span className="hd-topic-title__arrow">↗</span>
+          </a>
+        </article>
+      )
+    }
+
+    if (bodyOnly) {
+      return (
+        <article id={`node-${node.id}`} className="hd-topic-card">
+          <div className="hd-topic-body hd-topic-body--standalone">
+            <LeafContent node={node} />
+          </div>
+        </article>
+      )
+    }
+
     return (
       <article id={`node-${node.id}`} className="hd-topic-card">
         <div className="hd-topic-title" style={{ cursor: 'default' }}>

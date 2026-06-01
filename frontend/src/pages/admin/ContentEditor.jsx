@@ -9,6 +9,30 @@ import {
 
 const { TextArea } = Input
 
+function normalizeNodeContent(content = {}) {
+  const fields = content.fields || []
+  if (content.body && !content.link_url && content.content_type !== 'link' && fields.length === 0) {
+    return { ...content, content_type: 'richtext', fields }
+  }
+  return { ...content, fields }
+}
+
+function getNodeContent(node) {
+  const content = node.content || {
+    content_type: node.content_type,
+    summary: node.summary,
+    department: node.department,
+    remark: node.remark,
+    link_url: node.link_url,
+    link_label: node.link_label,
+    link_target: node.link_target,
+    body: node.body,
+    fields: node.fields || []
+  }
+
+  return normalizeNodeContent(content)
+}
+
 export default function ContentEditor({ node, onRefresh }) {
   const [form] = Form.useForm()
   const [contentType, setContentType] = useState('info')
@@ -16,7 +40,7 @@ export default function ContentEditor({ node, onRefresh }) {
 
   useEffect(() => {
     if (!node) return
-    const content = node.content || {}
+    const content = getNodeContent(node)
     setContentType(content.content_type || 'info')
 
     form.setFieldsValue({

@@ -101,6 +101,12 @@
 
 .content-editor-header h3 {
   margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding-right: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Module Grid (public) ── */
