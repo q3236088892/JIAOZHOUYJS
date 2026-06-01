@@ -33,6 +33,8 @@ router.post('/modules', (req, res) => {
     code: String(code).trim(),
     title: String(title).trim(),
     icon_url: icon_url || null,
+    home_banner_url: req.body.home_banner_url || null,
+    detail_banner_url: req.body.detail_banner_url || null,
     sort_order: sort_order == null ? 0 : Number(sort_order) || 0
   })
   res.json({ code: 200, data: getModules(), msg: 'success' })
@@ -47,6 +49,8 @@ router.put('/modules/:id', (req, res) => {
   if (req.body.code != null) data.code = String(req.body.code).trim()
   if (req.body.title != null) data.title = String(req.body.title).trim()
   if (req.body.icon_url != null) data.icon_url = req.body.icon_url
+  if (req.body.home_banner_url != null) data.home_banner_url = req.body.home_banner_url
+  if (req.body.detail_banner_url != null) data.detail_banner_url = req.body.detail_banner_url
   if (req.body.sort_order != null) data.sort_order = Number(req.body.sort_order) || 0
   if (req.body.is_active != null) data.is_active = Number(req.body.is_active) ? 1 : 0
 

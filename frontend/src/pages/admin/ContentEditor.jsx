@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react'
-import { Button, Form, Input, Select, Space, Divider, message, Popconfirm } from 'antd'
-import { PlusOutlined, MinusCircleOutlined, SaveOutlined, DeleteOutlined } from '@ant-design/icons'
+import { useEffect, useState, useCallback } from 'react'
+import { Button, Form, Input, Select, Space, Divider, message, Popconfirm, Upload } from 'antd'
+import {
+  PlusOutlined, MinusCircleOutlined, SaveOutlined, DeleteOutlined,
+  HolderOutlined, ArrowUpOutlined, ArrowDownOutlined,
+  FileTextOutlined, PictureOutlined, PlayCircleOutlined, TableOutlined,
+  UploadOutlined
+} from '@ant-design/icons'
 import {
   getAdminCdModules,
   updateAdminCdNode,
-  updateAdminCdContent
+  updateAdminCdContent,
+  uploadCdImage
 } from '../../api/homeIndustry'
 
 const { TextArea } = Input
@@ -29,53 +35,300 @@ function getNodeContent(node) {
     body: node.body,
     fields: node.fields || []
   }
-
   return normalizeNodeContent(content)
+}
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+}
+
+function convertToBlocks(content) {
+  if (content.content_type === 'blocks') {
+    try {
+      const parsed = JSON.parse(content.body)
+      if (Array.isArray(parsed)) return parsed
+    } catch {
+      return [{ id: generateId(), type: 'text', content: content.body || '' }]
+    }
+  }
+  if (content.content_type === 'richtext' && content.body) {
+    return [{ id: generateId(), type: 'text', content: content.body }]
+  }
+  if (content.content_type === 'info' && content.fields && content.fields.length > 0) {
+    return [{ id: generateId(), type: 'info', fields: content.fields.map(f => ({ label: f.field_label, value: f.field_value })) }]
+  }
+  return []
+}
+
+const BLOCK_TYPE_OPTIONS = [
+  { key: 'text', label: '文字', icon: <FileTextOutlined /> },
+  { key: 'image', label: '图片', icon: <PictureOutlined /> },
+  { key: 'video', label: '视频', icon: <PlayCircleOutlined /> },
+  { key: 'info', label: '信息', icon: <TableOutlined /> }
+]
+
+function createEmptyBlock(type) {
+  const base = { id: generateId(), type }
+  if (type === 'text') return { ...base, content: '' }
+  if (type === 'image') return { ...base, url: '', caption: '' }
+  if (type === 'video') return { ...base, url: '' }
+  if (type === 'info') return { ...base, fields: [{ label: '', value: '' }] }
+  return base
+}
+
+function TextBlockEditor({ block, onChange }) {
+  return (
+    <TextArea
+      rows={4}
+      value={block.content}
+      onChange={e => onChange({ ...block, content: e.target.value })}
+      placeholder="输入文字内容..."
+      style={{ resize: 'vertical' }}
+    />
+  )
+}
+
+function ImageBlockEditor({ block, onChange }) {
+  const handleUpload = async (info) => {
+    if (info.file.status === 'done') {
+      const res = info.file.response
+      if (res.code === 200) {
+        onChange({ ...block, url: res.data.url })
+      }
+    }
+  }
+
+  return (
+    <div>
+      {block.url && (
+        <img src={block.url} alt={block.caption || ''} className="ce-block-image-preview" />
+      )}
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Upload
+          accept="image/*"
+          showUploadList={false}
+          customRequest={({ file, onSuccess }) => {
+            uploadCdImage(file).then(res => {
+              if (res.data.code === 200) {
+                onChange({ ...block, url: res.data.data.url })
+              }
+              onSuccess(res.data)
+            })
+          }}
+          onChange={handleUpload}
+        >
+          <Button icon={<UploadOutlined />} size="small">
+            {block.url ? '更换图片' : '上传图片'}
+          </Button>
+        </Upload>
+        <Input
+          value={block.caption}
+          onChange={e => onChange({ ...block, caption: e.target.value })}
+          placeholder="图片说明（可选）"
+          size="small"
+        />
+      </Space>
+    </div>
+  )
+}
+
+function VideoBlockEditor({ block, onChange }) {
+  return (
+    <div>
+      <Input
+        value={block.url}
+        onChange={e => onChange({ ...block, url: e.target.value })}
+        placeholder="粘贴视频链接（支持B站、优酷、YouTube等）"
+        size="small"
+      />
+      {block.url && (
+        <div style={{ marginTop: 8 }}>
+          {block.url.includes('bilibili.com') ? (
+            <iframe
+              src={block.url.replace('/video/', '/player/bn/').split('?')[0]}
+              className="ce-block-video-preview"
+              allowFullScreen
+              frameBorder="0"
+            />
+          ) : (
+            <div style={{ padding: 16, background: '#f5f5f5', borderRadius: 4, color: '#999', fontSize: 12, textAlign: 'center' }}>
+              视频预览: {block.url}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function InfoBlockEditor({ block, onChange }) {
+  const updateField = (index, key, value) => {
+    const newFields = [...block.fields]
+    newFields[index] = { ...newFields[index], [key]: value }
+    onChange({ ...block, fields: newFields })
+  }
+
+  const addField = () => {
+    onChange({ ...block, fields: [...block.fields, { label: '', value: '' }] })
+  }
+
+  const removeField = (index) => {
+    onChange({ ...block, fields: block.fields.filter((_, i) => i !== index) })
+  }
+
+  return (
+    <div className="ce-block-info-fields">
+      {block.fields.map((field, index) => (
+        <div key={index} className="ce-block-info-row">
+          <Input
+            value={field.label}
+            onChange={e => updateField(index, 'label', e.target.value)}
+            placeholder="标签"
+            size="small"
+            style={{ width: 120 }}
+          />
+          <Input
+            value={field.value}
+            onChange={e => updateField(index, 'value', e.target.value)}
+            placeholder="内容"
+            size="small"
+            style={{ flex: 1 }}
+          />
+          <Button
+            type="text"
+            size="small"
+            icon={<MinusCircleOutlined />}
+            onClick={() => removeField(index)}
+            danger
+          />
+        </div>
+      ))}
+      <Button type="dashed" onClick={addField} icon={<PlusOutlined />} size="small" style={{ alignSelf: 'flex-start' }}>
+        添加字段
+      </Button>
+    </div>
+  )
+}
+
+function BlockEditor({ block, onChange, onMoveUp, onMoveDown, onDelete, isFirst, isLast }) {
+  const typeLabel = BLOCK_TYPE_OPTIONS.find(t => t.key === block.type)?.label || block.type
+  const typeIcon = BLOCK_TYPE_OPTIONS.find(t => t.key === block.type)?.icon
+
+  const EditorComponent = {
+    text: TextBlockEditor,
+    image: ImageBlockEditor,
+    video: VideoBlockEditor,
+    info: InfoBlockEditor
+  }[block.type]
+
+  return (
+    <div className="ce-block-item">
+      <div className="ce-block-header">
+        <div className="ce-block-type-label">
+          <HolderOutlined />
+          {typeIcon}
+          <span>{typeLabel}区块</span>
+        </div>
+        <div className="ce-block-actions">
+          <Button type="text" size="small" icon={<ArrowUpOutlined />} onClick={onMoveUp} disabled={isFirst} />
+          <Button type="text" size="small" icon={<ArrowDownOutlined />} onClick={onMoveDown} disabled={isLast} />
+          <Popconfirm title="确定删除此区块？" onConfirm={onDelete} okText="删除" cancelText="取消">
+            <Button type="text" size="small" icon={<DeleteOutlined />} danger />
+          </Popconfirm>
+        </div>
+      </div>
+      {EditorComponent && <EditorComponent block={block} onChange={onChange} />}
+    </div>
+  )
 }
 
 export default function ContentEditor({ node, onRefresh }) {
   const [form] = Form.useForm()
   const [contentType, setContentType] = useState('info')
   const [saving, setSaving] = useState(false)
+  const [blocks, setBlocks] = useState([])
+  const [legacyFields, setLegacyFields] = useState([])
 
   useEffect(() => {
     if (!node) return
     const content = getNodeContent(node)
-    setContentType(content.content_type || 'info')
+    const ct = content.content_type || 'info'
+    setContentType(ct)
 
     form.setFieldsValue({
       title: node.title,
       node_type: node.node_type,
       sort_order: node.sort_order ?? 0,
-      content_type: content.content_type || 'info',
+      content_type: ct,
       summary: content.summary || '',
       link_url: content.link_url || '',
       link_label: content.link_label || '',
       link_target: content.link_target || '_blank',
       body: content.body || '',
       department: content.department || '',
-      remark: content.remark || '',
-      fields: (content.fields || []).map((f) => ({
+      remark: content.remark || ''
+    })
+
+    if (ct === 'blocks') {
+      setBlocks(convertToBlocks(content))
+    } else if (ct === 'richtext' || ct === 'info') {
+      setBlocks(convertToBlocks(content))
+      setLegacyFields((content.fields || []).map(f => ({
         field_key: f.field_key,
         field_label: f.field_label,
         field_value: f.field_value
-      }))
-    })
+      })))
+    } else {
+      setBlocks([])
+      setLegacyFields((content.fields || []).map(f => ({
+        field_key: f.field_key,
+        field_label: f.field_label,
+        field_value: f.field_value
+      })))
+    }
   }, [node, form])
+
+  const updateBlock = useCallback((index, newBlock) => {
+    setBlocks(prev => prev.map((b, i) => i === index ? newBlock : b))
+  }, [])
+
+  const moveBlock = useCallback((index, direction) => {
+    setBlocks(prev => {
+      const next = [...prev]
+      const target = index + direction
+      if (target < 0 || target >= next.length) return prev
+      ;[next[index], next[target]] = [next[target], next[index]]
+      return next
+    })
+  }, [])
+
+  const removeBlock = useCallback((index) => {
+    setBlocks(prev => prev.filter((_, i) => i !== index))
+  }, [])
+
+  const addBlock = useCallback((type) => {
+    setBlocks(prev => [...prev, createEmptyBlock(type)])
+  }, [])
+
+  const handleContentTypeChange = useCallback((value) => {
+    setContentType(value)
+    if (value === 'blocks' && blocks.length === 0) {
+      const content = getNodeContent(node)
+      setBlocks(convertToBlocks(content))
+    }
+  }, [node, blocks.length])
 
   const handleSave = async () => {
     setSaving(true)
     try {
       const values = await form.validateFields()
 
-      // Update node basic info
       await updateAdminCdNode(node.id, {
         title: values.title,
         node_type: values.node_type,
         sort_order: values.sort_order ?? 0
       })
 
-      // Update content if leaf node
       if (values.node_type === 'leaf') {
         const contentData = {
           content_type: values.content_type,
@@ -90,17 +343,21 @@ export default function ContentEditor({ node, onRefresh }) {
           contentData.link_target = values.link_target || '_blank'
         } else if (values.content_type === 'richtext') {
           contentData.body = values.body || null
-        }
-
-        const fields = values.content_type === 'info'
-          ? (values.fields || []).filter((f) => f.field_label && f.field_value).map((f, i) => ({
+        } else if (values.content_type === 'blocks') {
+          contentData.body = JSON.stringify(blocks)
+        } else if (values.content_type === 'info') {
+          const fields = legacyFields.filter(f => f.field_label && f.field_value).map((f, i) => ({
             field_key: f.field_key || `field_${i}`,
             field_label: f.field_label,
             field_value: f.field_value
           }))
-          : []
+          await updateAdminCdContent(node.id, { ...contentData, fields })
+          message.success('保存成功')
+          onRefresh?.()
+          return
+        }
 
-        await updateAdminCdContent(node.id, contentData, fields)
+        await updateAdminCdContent(node.id, contentData)
       }
 
       message.success('保存成功')
@@ -116,50 +373,65 @@ export default function ContentEditor({ node, onRefresh }) {
   return (
     <div className="content-editor">
       <div className="content-editor-header">
-        <h3>{node.title}</h3>
+        <h3>编辑节点内容</h3>
         <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>
           保存
         </Button>
       </div>
 
       <Form form={form} layout="vertical" size="small">
-        <Form.Item name="title" label="节点标题" rules={[{ required: true, message: '请输入标题' }]}>
-          <Input />
-        </Form.Item>
-
-        <Space style={{ width: '100%' }}>
-          <Form.Item name="node_type" label="节点类型" style={{ width: 150 }}>
-            <Select
-              options={[
-                { label: '分支（目录）', value: 'branch' },
-                { label: '叶子（内容）', value: 'leaf' }
-              ]}
-            />
+        <div className="ce-section">
+          <div className="ce-section-title">基本信息</div>
+          <Form.Item name="title" label="节点标题" rules={[{ required: true, message: '请输入标题' }]}>
+            <Input />
           </Form.Item>
-          <Form.Item name="sort_order" label="排序" style={{ width: 100 }}>
-            <Input type="number" />
-          </Form.Item>
-        </Space>
+          <Space style={{ width: '100%' }}>
+            <Form.Item name="node_type" label="节点类型" style={{ width: 150 }}>
+              <Select
+                options={[
+                  { label: '分支（目录）', value: 'branch' },
+                  { label: '叶子（内容）', value: 'leaf' }
+                ]}
+              />
+            </Form.Item>
+            <Form.Item name="sort_order" label="排序" style={{ width: 100 }}>
+              <Input type="number" />
+            </Form.Item>
+          </Space>
+        </div>
 
         <Form.Item noStyle shouldUpdate={(prev, cur) => prev.node_type !== cur.node_type}>
           {({ getFieldValue }) =>
             getFieldValue('node_type') === 'leaf' ? (
               <>
-                <Divider>内容设置</Divider>
+                <div className="ce-section">
+                  <div className="ce-section-title">通用信息</div>
+                  <Form.Item name="content_type" label="内容类型">
+                    <Select
+                      onChange={handleContentTypeChange}
+                      options={[
+                        { label: '区块内容（推荐）', value: 'blocks' },
+                        { label: '链接', value: 'link' },
+                        { label: '结构化信息', value: 'info' },
+                        { label: '富文本', value: 'richtext' }
+                      ]}
+                    />
+                  </Form.Item>
 
-                <Form.Item name="content_type" label="内容类型">
-                  <Select
-                    onChange={setContentType}
-                    options={[
-                      { label: '链接', value: 'link' },
-                      { label: '结构化信息', value: 'info' },
-                      { label: '富文本', value: 'richtext' }
-                    ]}
-                  />
-                </Form.Item>
+                  <Form.Item name="summary" label="摘要">
+                    <Input />
+                  </Form.Item>
+                  <Form.Item name="department" label="牵头单位/提供部门">
+                    <Input />
+                  </Form.Item>
+                  <Form.Item name="remark" label="备注">
+                    <TextArea rows={2} />
+                  </Form.Item>
+                </div>
 
                 {contentType === 'link' && (
-                  <>
+                  <div className="ce-section">
+                    <div className="ce-section-title">链接设置</div>
                     <Form.Item name="link_label" label="链接文本">
                       <Input />
                     </Form.Item>
@@ -174,64 +446,133 @@ export default function ContentEditor({ node, onRefresh }) {
                         ]}
                       />
                     </Form.Item>
-                  </>
+                  </div>
                 )}
 
                 {contentType === 'info' && (
-                  <>
-                    <div style={{ marginBottom: 8, fontWeight: 500 }}>信息字段</div>
-                    <Form.List name="fields">
-                      {(fields, { add, remove }) => (
-                        <>
-                          {fields.map((field) => (
-                            <Space key={field.key} align="baseline" style={{ marginBottom: 8 }}>
-                              <Form.Item
-                                {...field}
-                                name={[field.name, 'field_label']}
-                                style={{ width: 120 }}
-                              >
-                                <Input placeholder="标签" />
-                              </Form.Item>
-                              <Form.Item
-                                {...field}
-                                name={[field.name, 'field_value']}
-                                style={{ width: 300 }}
-                              >
-                                <Input placeholder="内容" />
-                              </Form.Item>
-                              <MinusCircleOutlined onClick={() => remove(field.name)} />
-                            </Space>
-                          ))}
-                          <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} size="small">
-                            添加字段
-                          </Button>
-                        </>
-                      )}
-                    </Form.List>
-                  </>
+                  <div className="ce-section">
+                    <div className="ce-section-title">结构化信息编辑</div>
+                    <div className="ce-block-info-fields">
+                      {legacyFields.map((field, index) => (
+                        <div key={index} className="ce-block-info-row">
+                          <Input
+                            value={field.field_label}
+                            onChange={e => {
+                              const newFields = [...legacyFields]
+                              newFields[index] = { ...newFields[index], field_label: e.target.value }
+                              setLegacyFields(newFields)
+                            }}
+                            placeholder="标签"
+                            size="small"
+                            style={{ width: 120 }}
+                          />
+                          <Input
+                            value={field.field_value}
+                            onChange={e => {
+                              const newFields = [...legacyFields]
+                              newFields[index] = { ...newFields[index], field_value: e.target.value }
+                              setLegacyFields(newFields)
+                            }}
+                            placeholder="内容"
+                            size="small"
+                            style={{ flex: 1 }}
+                          />
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<MinusCircleOutlined />}
+                            onClick={() => setLegacyFields(legacyFields.filter((_, i) => i !== index))}
+                            danger
+                          />
+                        </div>
+                      ))}
+                      <Button
+                        type="dashed"
+                        onClick={() => setLegacyFields([...legacyFields, { field_key: '', field_label: '', field_value: '' }])}
+                        icon={<PlusOutlined />}
+                        size="small"
+                        style={{ alignSelf: 'flex-start' }}
+                      >
+                        添加字段
+                      </Button>
+                    </div>
+                  </div>
                 )}
 
                 {contentType === 'richtext' && (
-                  <Form.Item name="body" label="内容">
-                    <TextArea rows={6} placeholder="输入内容..." />
-                  </Form.Item>
+                  <div className="ce-section">
+                    <div className="ce-section-title">富文本内容</div>
+                    <Form.Item name="body" label="内容">
+                      <TextArea rows={6} placeholder="输入内容..." />
+                    </Form.Item>
+                  </div>
                 )}
 
-                <Divider>通用信息</Divider>
-                <Form.Item name="department" label="牵头单位/提供部门">
-                  <Input />
-                </Form.Item>
-                <Form.Item name="remark" label="备注">
-                  <TextArea rows={2} />
-                </Form.Item>
-                <Form.Item name="summary" label="摘要">
-                  <Input />
-                </Form.Item>
+                {contentType === 'blocks' && (
+                  <div className="ce-section">
+                    <div className="ce-section-title">区块内容编辑</div>
+                    <div className="ce-block-list">
+                      {blocks.map((block, index) => (
+                        <BlockEditor
+                          key={block.id}
+                          block={block}
+                          onChange={(newBlock) => updateBlock(index, newBlock)}
+                          onMoveUp={() => moveBlock(index, -1)}
+                          onMoveDown={() => moveBlock(index, 1)}
+                          onDelete={() => removeBlock(index)}
+                          isFirst={index === 0}
+                          isLast={index === blocks.length - 1}
+                        />
+                      ))}
+                    </div>
+                    <Divider style={{ margin: '12px 0' }}>添加区块</Divider>
+                    <div className="ce-block-toolbar">
+                      {BLOCK_TYPE_OPTIONS.map(opt => (
+                        <Button
+                          key={opt.key}
+                          icon={opt.icon}
+                          onClick={() => addBlock(opt.key)}
+                          size="small"
+                        >
+                          {opt.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             ) : null
           }
         </Form.Item>
       </Form>
+
+      {node && (
+        <div className="ce-section" style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+          <div className="ce-section-title">节点信息</div>
+          <div className="ce-meta-grid">
+            <div className="ce-meta-item">
+              <span className="ce-meta-label">节点ID:</span>
+              <span className="ce-meta-value">{node.id}</span>
+            </div>
+            <div className="ce-meta-item">
+              <span className="ce-meta-label">节点类型:</span>
+              <span className="ce-meta-value">{node.node_type === 'leaf' ? '叶子' : '分支'}</span>
+            </div>
+            <div className="ce-meta-item">
+              <span className="ce-meta-label">内容类型:</span>
+              <span className="ce-meta-value">{node.content_type || node.content?.content_type || '-'}</span>
+            </div>
+            <div className="ce-meta-item">
+              <span className="ce-meta-label">创建时间:</span>
+              <span className="ce-meta-value">{node.created_at || '-'}</span>
+            </div>
+            <div className="ce-meta-item">
+              <span className="ce-meta-label">更新时间:</span>
+              <span className="ce-meta-value">{node.updated_at || node.content?.updated_at || '-'}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

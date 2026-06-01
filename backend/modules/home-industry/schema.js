@@ -10,6 +10,10 @@ export function ensureHomeIndustryTables(db) {
     updated_at TEXT DEFAULT (datetime('now','localtime'))
   )`)
 
+  // Migration: add banner columns if missing
+  try { db.run(`ALTER TABLE cd_module ADD COLUMN home_banner_url TEXT`) } catch {}
+  try { db.run(`ALTER TABLE cd_module ADD COLUMN detail_banner_url TEXT`) } catch {}
+
   db.run(`CREATE TABLE IF NOT EXISTS cd_node (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     module_id INTEGER NOT NULL,

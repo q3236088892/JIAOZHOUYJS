@@ -5,7 +5,8 @@ import ContentEditor from '../pages/admin/ContentEditor'
 vi.mock('../api/homeIndustry', () => ({
   getAdminCdModules: vi.fn(),
   updateAdminCdNode: vi.fn(),
-  updateAdminCdContent: vi.fn()
+  updateAdminCdContent: vi.fn(),
+  uploadCdImage: vi.fn()
 }))
 
 describe('ContentEditor links', () => {

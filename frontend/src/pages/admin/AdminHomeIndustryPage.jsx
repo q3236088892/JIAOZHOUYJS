@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Button, Input, Modal, Select, Space, Tree, message, Tag, Popconfirm, Dropdown } from 'antd'
-import { PlusOutlined, DeleteOutlined, ImportOutlined, FolderOutlined, FileTextOutlined, DownOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
+import { Button, Input, Modal, Select, Space, Tree, message, Tag, Popconfirm, Dropdown, Upload } from 'antd'
+import { PlusOutlined, DeleteOutlined, ImportOutlined, FolderOutlined, FileTextOutlined, DownOutlined, PictureOutlined, UploadOutlined } from '@ant-design/icons'
 import {
-  getAdminCdModules, createAdminCdModule,
+  getAdminCdModules, createAdminCdModule, updateAdminCdModule, uploadCdImage,
   getAdminCdTree, createAdminCdNode, updateAdminCdNode, deleteAdminCdNode
 } from '../../api/homeIndustry'
 import { toAntdTreeData, findNodeInTree, collectExpandedKeys } from '../../utils/homeIndustryTree'
@@ -11,6 +12,7 @@ import ExcelImportModal from './ExcelImportModal'
 import '../../styles/admin.css'
 
 export default function AdminHomeIndustryPage() {
+  const navigate = useNavigate()
   const [modules, setModules] = useState([])
   const [selectedModuleId, setSelectedModuleId] = useState(null)
   const [treeData, setTreeData] = useState([])
@@ -24,6 +26,9 @@ export default function AdminHomeIndustryPage() {
   const [newModuleCode, setNewModuleCode] = useState('')
   const [newModuleTitle, setNewModuleTitle] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showModuleSettings, setShowModuleSettings] = useState(false)
+  const [moduleSettings, setModuleSettings] = useState({ home_banner_url: '', detail_banner_url: '' })
+  const [savingSettings, setSavingSettings] = useState(false)
 
   const loadModules = useCallback(async () => {
     try {
@@ -55,6 +60,16 @@ export default function AdminHomeIndustryPage() {
 
   useEffect(() => { loadModules() }, [loadModules])
   useEffect(() => { loadTree() }, [loadTree])
+
+  useEffect(() => {
+    const mod = modules.find(m => m.id === selectedModuleId)
+    if (mod) {
+      setModuleSettings({
+        home_banner_url: mod.home_banner_url || '',
+        detail_banner_url: mod.detail_banner_url || ''
+      })
+    }
+  }, [selectedModuleId, modules])
 
   const handleSelect = (keys) => {
     if (keys.length === 0) {
@@ -111,6 +126,20 @@ export default function AdminHomeIndustryPage() {
     } catch { message.error('创建失败') }
   }
 
+  const handleBannerUpload = async (file, field) => {
+    try {
+      const res = await uploadCdImage(file)
+      if (res.data.code === 200) {
+        setModuleSettings(prev => ({ ...prev, [field]: res.data.data.url }))
+        await updateAdminCdModule(selectedModuleId, { [field]: res.data.data.url })
+        message.success('上传成功')
+        await loadModules()
+      }
+    } catch {
+      message.error('上传失败')
+    }
+  }
+
   const handleImportSuccess = () => {
     setShowImport(false)
     loadTree()
@@ -158,14 +187,11 @@ export default function AdminHomeIndustryPage() {
 
   return (
     <div className="admin-page">
-      <h1>{'家居产业内容管理'}</h1>
-
-      <div className="admin-preview-panel">
-        <Space wrap>
-          <Tag color="blue">{'模块'} {modules.length}</Tag>
-          <Tag color="green">{'节点'} {stats.nodeCount}</Tag>
-          <Tag color="cyan">{'叶子'} {stats.leafCount}</Tag>
-        </Space>
+      <div className="admin-page-header">
+        <h1>{'家居产业内容管理'}</h1>
+        <Button size="small" onClick={() => { localStorage.removeItem('admin_token'); localStorage.removeItem('admin_user'); navigate('/login', { replace: true }) }}>
+          退出登录
+        </Button>
       </div>
 
       <div className="admin-card">
@@ -179,7 +205,60 @@ export default function AdminHomeIndustryPage() {
           />
           <Button icon={<PlusOutlined />} onClick={() => setShowModuleModal(true)}>{'新增模块'}</Button>
           <Button icon={<ImportOutlined />} onClick={() => setShowImport(true)}>{'导入Excel'}</Button>
+          <Button
+            icon={<PictureOutlined />}
+            onClick={() => setShowModuleSettings(!showModuleSettings)}
+            type={showModuleSettings ? 'primary' : 'default'}
+          >
+            {'Banner设置'}
+          </Button>
         </Space>
+
+        {showModuleSettings && selectedModuleId && (
+          <div style={{ marginBottom: 16, padding: 16, background: '#fafafa', borderRadius: 8, border: '1px solid #e5e7eb' }}>
+            <div style={{ fontWeight: 600, marginBottom: 12 }}>Banner 图片设置</div>
+            <Space size="large" wrap>
+              <div>
+                <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>首页 Banner</div>
+                {moduleSettings.home_banner_url && (
+                  <img
+                    src={moduleSettings.home_banner_url}
+                    alt="首页Banner"
+                    style={{ width: 300, height: 60, objectFit: 'cover', borderRadius: 4, marginBottom: 8, display: 'block', border: '1px solid #e5e7eb' }}
+                  />
+                )}
+                <Upload
+                  accept="image/*"
+                  showUploadList={false}
+                  customRequest={({ file }) => handleBannerUpload(file, 'home_banner_url')}
+                >
+                  <Button icon={<UploadOutlined />} size="small">
+                    {moduleSettings.home_banner_url ? '更换' : '上传'}首页Banner
+                  </Button>
+                </Upload>
+              </div>
+              <div>
+                <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>详情页 Banner</div>
+                {moduleSettings.detail_banner_url && (
+                  <img
+                    src={moduleSettings.detail_banner_url}
+                    alt="详情页Banner"
+                    style={{ width: 300, height: 60, objectFit: 'cover', borderRadius: 4, marginBottom: 8, display: 'block', border: '1px solid #e5e7eb' }}
+                  />
+                )}
+                <Upload
+                  accept="image/*"
+                  showUploadList={false}
+                  customRequest={({ file }) => handleBannerUpload(file, 'detail_banner_url')}
+                >
+                  <Button icon={<UploadOutlined />} size="small">
+                    {moduleSettings.detail_banner_url ? '更换' : '上传'}详情页Banner
+                  </Button>
+                </Upload>
+              </div>
+            </Space>
+          </div>
+        )}
 
         <div className="cd-admin-layout">
           <div className="cd-admin-tree">

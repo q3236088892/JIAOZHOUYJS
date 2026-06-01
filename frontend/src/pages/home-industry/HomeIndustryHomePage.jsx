@@ -55,8 +55,13 @@ export default function HomeIndustryHomePage() {
       .catch(() => {})
   }, [])
 
+  const homeBannerUrl = modules.find(m => m.home_banner_url)?.home_banner_url
+  const pageStyle = homeBannerUrl
+    ? { backgroundImage: `url(${homeBannerUrl})`, backgroundRepeat: 'no-repeat', backgroundPosition: 'top center', backgroundSize: '100% 48vh', backgroundColor: '#f7fbff' }
+    : undefined
+
   return (
-    <div className="hd-page cd-home-wrap">
+    <div className="hd-page cd-home-wrap" style={pageStyle}>
       <header className="hd-top-nav">
         <ul>
           <li><Link to="/homeIndustry">历史首页</Link></li>

@@ -24,6 +24,15 @@ export const createAdminCdField = (data) => api.post('/admin/cd/content-fields',
 export const updateAdminCdField = (id, data) => api.put(`/admin/cd/content-fields/${id}`, data)
 export const deleteAdminCdField = (id) => api.delete(`/admin/cd/content-fields/${id}`)
 
+// Admin - Upload
+export const uploadCdImage = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return api.post('/system/oss/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
 // Admin - Import
 export const importCdExcel = (moduleId, file) => {
   const formData = new FormData()

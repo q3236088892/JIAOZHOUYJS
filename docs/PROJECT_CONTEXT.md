@@ -165,8 +165,53 @@ node = {
 - 链接节点通常是 `content_type='link'` 且有 `link_url`，不要影响其现有展示和编辑逻辑。
 - 存在历史/导入数据不一致情况：`content_type='info'` 但有 `body` 且 `fields` 为空。这类节点应按富文本正文兜底处理。
 - 如果叶子节点标题和 `body` 完全重复，前台应避免把整段正文再次作为标题栏展示。
+- `content_type='blocks'` 是新增的区块内容类型，`body` 存储 JSON 数组。编辑旧 `richtext`/`info` 内容时会自动转换为 `blocks` 格式。前台渲染时需处理 JSON 解析失败的降级情况。
 
 ## 最近重要改动记录
+
+### 2026-06-01：后台增加登录认证
+
+需求：后台管理页面需要账号密码保护，防止未授权访问。
+
+处理：
+
+- 新建 `backend/auth.js`：使用 Node.js 内置 `crypto` 模块实现 SHA-256 密码哈希和随机 Token 生成。默认账号 `admin` / `admin123`，Token 存内存，24 小时有效。
+- `backend/app.js`：新增 `POST /api/auth/login` 和 `GET /api/auth/me` 路由；`/api/admin/*` 路由加 `authMiddleware` 保护。
+- 新建 `frontend/src/api/auth.js`：登录和验证 API 封装。
+- 新建 `frontend/src/pages/admin/LoginPage.jsx`：深色科技感登录页，渐变光效背景，居中登录卡片。
+- `frontend/src/App.jsx`：新增 `ProtectedRoute` 组件和 `/login` 路由，admin 路由用守卫包裹。
+- `frontend/src/api/index.js`：axios 请求拦截器自动附加 Token，响应拦截器 401 时跳转登录页。
+- `frontend/src/styles/admin.css`：新增登录页样式（`.login-page`、`.login-card`、光效动画）。
+- 移除 `AdminHomeIndustryPage` 和 `AdminHistoricPage` 的统计摘要面板。
+- 后端测试更新：admin 路由测试需先获取 Token。
+
+### 2026-06-01：首页和详情页 Banner 支持后台更换
+
+需求：首页和子页面的 banner 背景图需要支持从后台管理页面更换。
+
+处理：
+
+- `schema.js` 对 `cd_module` 表增加 `home_banner_url` 和 `detail_banner_url` 列（ALTER TABLE 迁移）。
+- `admin-routes.js` PUT/POST modules 接口增加接收这两个字段。
+- `AdminHomeIndustryPage.jsx` 增加"Banner设置"按钮，展开后可上传/更换首页和详情页 banner 图片，上传后自动保存。
+- `HomeIndustryHomePage.jsx` 读取模块的 `home_banner_url` 作为 `.hd-page` 的内联背景样式，无设置时回退到 CSS 默认 `home_bg.png`。
+- `ModuleDetailPage.jsx` 读取 `moduleInfo.detail_banner_url` 作为 `.hd-detail-page` 的内联背景样式，无设置时回退到 CSS 默认 `detail_bg.png`。
+
+### 2026-06-01：新增区块化内容编辑器
+
+需求：后台编辑器需要支持复杂内容编辑（多段文字、图片、视频、结构化信息组合），使发布内容能呈现丰富的页面效果。
+
+处理：
+
+- 新增 `content_type='blocks'`，区块数组以 JSON 存入 `body` 字段，不改数据库结构。
+- `ContentEditor.jsx` 重写为区块编辑器，支持 text/image/video/info 四种区块类型，每种区块有独立编辑 UI。
+- `ModuleDetailPage.jsx` 新增 `BlocksContent` 组件，解析 JSON 并渲染各类型区块，JSON 解析失败时降级为纯文本。
+- `admin.css` 新增区块编辑器相关样式（.ce-section, .ce-block-item, .ce-block-toolbar 等）。
+- `homeIndustry.js` 新增 `uploadCdImage` 函数，复用已有的 `POST /api/system/oss/upload` 接口。
+- 旧 `richtext`/`info` 内容编辑时自动转换为 `blocks` 格式；旧 `link` 类型保持不变。
+- `normalizeNodeContent` 和 `isBodyOnlyLeaf` 增加对 `blocks` 类型的兼容处理。
+
+向后兼容：旧数据（richtext/info/link）前台渲染不受影响，编辑时自动转换。
 
 ### 2026-06-01：修复长文本叶子节点不可编辑/前台显示异常
 

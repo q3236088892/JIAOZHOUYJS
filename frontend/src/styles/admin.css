@@ -9,17 +9,15 @@
   margin-bottom: 16px;
 }
 
-.admin-preview-panel {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px;
+.admin-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
 }
 
-.admin-preview-panel h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
+.admin-page-header h1 {
+  margin-bottom: 0;
 }
 
 .admin-card {
@@ -107,6 +105,130 @@
   padding-right: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ── Block Content Editor ── */
+
+.ce-section {
+  margin-bottom: 20px;
+}
+
+.ce-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ce-block-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ce-block-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fafafa;
+  position: relative;
+}
+
+.ce-block-item:hover {
+  border-color: #91caff;
+}
+
+.ce-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ce-block-type-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.ce-block-type-label .anticon {
+  color: #999;
+  cursor: grab;
+}
+
+.ce-block-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ce-block-actions .ant-btn {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+}
+
+.ce-block-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ce-block-image-preview {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.ce-block-video-preview {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.ce-block-info-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ce-block-info-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ce-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 16px;
+  font-size: 12px;
+  color: #888;
+}
+
+.ce-meta-item {
+  display: flex;
+  gap: 6px;
+}
+
+.ce-meta-label {
+  color: #aaa;
+  white-space: nowrap;
+}
+
+.ce-meta-value {
+  color: #666;
+  word-break: break-all;
 }
 
 /* ── Module Grid (public) ── */
@@ -370,4 +492,142 @@
   background: #fff;
   width: 6px;
   height: 6px;
+}
+
+/* ── Login Page ── */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0e27;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.login-glow--1 {
+  width: 400px;
+  height: 400px;
+  background: #1677ff;
+  top: -100px;
+  right: -100px;
+  animation: glow-drift 8s ease-in-out infinite alternate;
+}
+
+.login-glow--2 {
+  width: 300px;
+  height: 300px;
+  background: #722ed1;
+  bottom: -80px;
+  left: -80px;
+  animation: glow-drift 10s ease-in-out infinite alternate-reverse;
+}
+
+.login-glow--3 {
+  width: 200px;
+  height: 200px;
+  background: #13c2c2;
+  top: 40%;
+  left: 50%;
+  animation: glow-drift 12s ease-in-out infinite alternate;
+}
+
+@keyframes glow-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -20px) scale(1.1); }
+  100% { transform: translate(-20px, 30px) scale(0.95); }
+}
+
+.login-card {
+  width: 400px;
+  padding: 48px 40px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+}
+
+.login-card__header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.login-card__logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.login-card__header h1 {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  letter-spacing: 1px;
+}
+
+.login-card__header p {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  margin: 0;
+}
+
+.login-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-card__form .ant-input-affix-wrapper,
+.login-card__form .ant-input {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.login-card__form .ant-input-affix-wrapper:hover,
+.login-card__form .ant-input-affix-wrapper-focused,
+.login-card__form .ant-input:hover,
+.login-card__form .ant-input-focused {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.15);
+}
+
+.login-card__form .ant-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.login-card__form .ant-input-prefix {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.login-card__form .ant-input-password-icon {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.login-card__form .ant-btn-primary {
+  height: 44px;
+  font-size: 15px;
+  border-radius: 8px;
+  margin-top: 4px;
+  background: linear-gradient(135deg, #1677ff 0%, #0958d9 100%);
+  border: none;
+  box-shadow: 0 4px 15px rgba(22, 119, 255, 0.3);
+}
+
+.login-card__form .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #4096ff 0%, #1677ff 100%);
+  box-shadow: 0 6px 20px rgba(22, 119, 255, 0.4);
 }

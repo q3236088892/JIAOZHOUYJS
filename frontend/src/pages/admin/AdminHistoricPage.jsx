@@ -1,79 +1,23 @@
 import { useEffect, useState } from 'react'
-import { Button, Form, Input, Modal, Space, Table, Tag, message } from 'antd'
+import { Button, Form, Input, Modal, Space, Table, message } from 'antd'
 import {
   getAdminNavItems,
   createAdminNavItem,
   updateAdminNavItem,
-  deleteAdminNavItem,
-  getAdminIndustries,
-  getAdminHomeServices,
-  getAdminStages,
-  getAdminCategories,
-  getAdminTopics,
-  getAdminTopicLinks,
-  getAdminTopicInfoFields
+  deleteAdminNavItem
 } from '../../api/historic'
 import '../../styles/admin.css'
 
-function PreviewPanel({ stats }) {
-  return (
-    <div className="admin-preview-panel">
-      <h3>{'\u5185\u5bb9\u7ed3\u6784\u9884\u89c8'}</h3>
-      <Space wrap>
-        <Tag color="blue">{'\u5bfc\u822a'} {stats.navCount}</Tag>
-        <Tag color="green">{'\u4e1a\u6001'} {stats.industryCount}</Tag>
-        <Tag color="gold">{'\u670d\u52a1'} {stats.serviceCount}</Tag>
-        <Tag color="purple">{'\u9636\u6bb5'} {stats.stageCount}</Tag>
-        <Tag color="magenta">{'\u5206\u7c7b'} {stats.categoryCount}</Tag>
-        <Tag color="cyan">{'\u4e3b\u9898'} {stats.topicCount}</Tag>
-        <Tag color="orange">{'\u94fe\u63a5'} {stats.topicLinkCount}</Tag>
-        <Tag color="geekblue">{'\u5b57\u6bb5'} {stats.infoFieldCount}</Tag>
-      </Space>
-    </div>
-  )
-}
-
 export default function AdminHistoricPage() {
   const [rows, setRows] = useState([])
-  const [stats, setStats] = useState({
-    navCount: 0,
-    industryCount: 0,
-    serviceCount: 0,
-    stageCount: 0,
-    categoryCount: 0,
-    topicCount: 0,
-    topicLinkCount: 0,
-    infoFieldCount: 0
-  })
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
 
   const load = async () => {
-    const [navRes, industriesRes, servicesRes, stagesRes, categoriesRes, topicsRes, topicLinksRes, fieldsRes] = await Promise.all([
-      getAdminNavItems(),
-      getAdminIndustries(),
-      getAdminHomeServices(),
-      getAdminStages(),
-      getAdminCategories(),
-      getAdminTopics(),
-      getAdminTopicLinks(),
-      getAdminTopicInfoFields()
-    ])
-
+    const navRes = await getAdminNavItems()
     if (navRes.data.code === 200) setRows(navRes.data.data)
-
-    setStats({
-      navCount: navRes.data?.data?.length ?? 0,
-      industryCount: industriesRes.data?.data?.length ?? 0,
-      serviceCount: servicesRes.data?.data?.length ?? 0,
-      stageCount: stagesRes.data?.data?.length ?? 0,
-      categoryCount: categoriesRes.data?.data?.length ?? 0,
-      topicCount: topicsRes.data?.data?.length ?? 0,
-      topicLinkCount: topicLinksRes.data?.data?.length ?? 0,
-      infoFieldCount: fieldsRes.data?.data?.length ?? 0
-    })
   }
 
   useEffect(() => {
@@ -150,8 +94,6 @@ export default function AdminHistoricPage() {
   return (
     <div className="admin-page">
       <h1>{'\u5386\u53f2\u57ce\u533a\u5185\u5bb9\u7ba1\u7406'}</h1>
-
-      <PreviewPanel stats={stats} />
 
       <div className="admin-card">
         <Space style={{ marginBottom: 16 }}>

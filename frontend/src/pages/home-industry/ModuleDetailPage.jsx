@@ -30,6 +30,8 @@ function buildLeftMenu(tree) {
 
 function normalizeNodeContent(content = {}) {
   const fields = content.fields || []
+  // Don't override 'blocks' type
+  if (content.content_type === 'blocks') return { ...content, fields }
   if (content.body && !content.link_url && content.content_type !== 'link' && fields.length === 0) {
     return { ...content, content_type: 'richtext', fields }
   }
@@ -57,12 +59,78 @@ function normalizeText(value) {
 }
 
 function isBodyOnlyLeaf(node, content) {
+  if (content.content_type === 'blocks') return false
   return Boolean(
     content.body &&
     !node.description &&
     !content.link_url &&
     (!content.fields || content.fields.length === 0) &&
     normalizeText(node.title) === normalizeText(content.body)
+  )
+}
+
+/**
+ * Render blocks content from JSON body
+ */
+function BlocksContent({ body }) {
+  let blocks = []
+  try {
+    blocks = JSON.parse(body)
+    if (!Array.isArray(blocks)) return <p style={{ whiteSpace: 'pre-wrap' }}>{body}</p>
+  } catch {
+    return <p style={{ whiteSpace: 'pre-wrap' }}>{body}</p>
+  }
+
+  return (
+    <div className="hd-blocks-content">
+      {blocks.map((block, i) => {
+        if (block.type === 'text') {
+          return (
+            <p key={block.id || i} style={{ whiteSpace: 'pre-wrap', marginBottom: 12 }}>
+              {block.content}
+            </p>
+          )
+        }
+        if (block.type === 'image' && block.url) {
+          return (
+            <figure key={block.id || i} style={{ margin: '0 0 12px' }}>
+              <img src={block.url} alt={block.caption || ''} style={{ maxWidth: '100%', borderRadius: 4 }} />
+              {block.caption && (
+                <figcaption style={{ fontSize: 12, color: '#888', marginTop: 4, textAlign: 'center' }}>
+                  {block.caption}
+                </figcaption>
+              )}
+            </figure>
+          )
+        }
+        if (block.type === 'video' && block.url) {
+          const isBili = block.url.includes('bilibili.com')
+          const src = isBili ? block.url.replace('/video/', '/player/bn/').split('?')[0] : block.url
+          return (
+            <div key={block.id || i} style={{ marginBottom: 12 }}>
+              <iframe
+                src={src}
+                style={{ width: '100%', aspectRatio: '16/9', border: 'none', borderRadius: 4 }}
+                allowFullScreen
+              />
+            </div>
+          )
+        }
+        if (block.type === 'info' && block.fields) {
+          return (
+            <div key={block.id || i} className="hd-topic-info" style={{ marginBottom: 12 }}>
+              {block.fields.filter(f => f.label && f.value).map((f, j) => (
+                <div key={j} className="hd-topic-info-field">
+                  <span className="label">{f.label}</span>
+                  <span className="value">{f.value}</span>
+                </div>
+              ))}
+            </div>
+          )
+        }
+        return null
+      })}
+    </div>
   )
 }
 
@@ -107,6 +175,10 @@ function LeafContent({ node }) {
         <div className="hd-topic-description">
           <p style={{ textIndent: 0, whiteSpace: 'pre-wrap' }}>{content.body}</p>
         </div>
+      )}
+
+      {content.content_type === 'blocks' && content.body && (
+        <BlocksContent body={content.body} />
       )}
 
       {content.department && (
@@ -386,8 +458,13 @@ export default function ModuleDetailPage() {
     )
   }
 
+  const detailBannerUrl = moduleInfo?.detail_banner_url
+  const pageStyle = detailBannerUrl
+    ? { backgroundImage: `url(${detailBannerUrl})`, backgroundRepeat: 'no-repeat', backgroundPosition: 'top center', backgroundSize: '100% 300px', backgroundColor: '#f7fbff' }
+    : undefined
+
   return (
-    <div className="hd-detail-page">
+    <div className="hd-detail-page" style={pageStyle}>
       <header className="hd-top-nav">
         <ul>
           <li><Link to="/homeIndustry">历史首页</Link></li>

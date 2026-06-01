@@ -5,6 +5,7 @@ import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { getAll, getById, insert, update, remove } from './db.js'
+import { login, verifyToken, authMiddleware } from './auth.js'
 import historicPublicRoutes from './modules/historic/public-routes.js'
 import historicAdminRoutes from './modules/historic/admin-routes.js'
 import homePublicRoutes from './modules/home-industry/public-routes.js'
@@ -93,10 +94,26 @@ export function createApp() {
     res.json({ code: 200, data: { url: `/uploads/${req.file.filename}`, filename: req.file.originalname }, msg: 'success' })
   })
 
+  // Auth routes
+  app.post('/api/auth/login', (req, res) => {
+    const { username, password } = req.body || {}
+    if (!username || !password) return res.status(400).json({ code: 400, msg: '请输入用户名和密码' })
+    const result = login(username, password)
+    if (!result.ok) return res.status(401).json({ code: 401, msg: result.msg })
+    res.json({ code: 200, data: { token: result.token, username: result.username }, msg: 'success' })
+  })
+
+  app.get('/api/auth/me', authMiddleware, (req, res) => {
+    res.json({ code: 200, data: { username: req.user.username }, msg: 'success' })
+  })
+
+  // Public routes
   app.use('/api/historic/public', historicPublicRoutes)
-  app.use('/api/admin/historic', historicAdminRoutes)
   app.use('/api/cd/public', homePublicRoutes)
-  app.use('/api/admin/cd', homeAdminRoutes)
+
+  // Admin routes (protected)
+  app.use('/api/admin/historic', authMiddleware, historicAdminRoutes)
+  app.use('/api/admin/cd', authMiddleware, homeAdminRoutes)
 
   app.use('/uploads', express.static(uploadsDir))
   app.use((err, req, res, next) => {

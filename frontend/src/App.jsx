@@ -9,23 +9,31 @@ import HistoricHomePage from './pages/historic/HistoricHomePage'
 import HistoricOpenRestaurantPage from './pages/historic/HistoricOpenRestaurantPage'
 import AdminHistoricPage from './pages/admin/AdminHistoricPage'
 import AdminHomeIndustryPage from './pages/admin/AdminHomeIndustryPage'
+import LoginPage from './pages/admin/LoginPage'
 import HomeIndustryHomePage from './pages/home-industry/HomeIndustryHomePage'
 import ModuleDetailPage from './pages/home-industry/ModuleDetailPage'
 import './styles/index.css'
+
+function ProtectedRoute({ children }) {
+  const token = localStorage.getItem('admin_token')
+  if (!token) return <Navigate to="/login" replace />
+  return children
+}
 
 function App() {
   return (
     <ConfigProvider locale={zhCN}>
       <Routes>
-        <Route path="/" element={<Navigate to="/events" replace />} />
+        <Route path="/" element={<Navigate to="/homeIndustry" replace />} />
         <Route path="/events" element={<EventList />} />
         <Route path="/events/:id" element={<EventDetail />} />
         <Route path="/events/new" element={<EventForm />} />
         <Route path="/events/edit/:id" element={<EventForm />} />
         <Route path="/historicDistrict" element={<HistoricHomePage />} />
         <Route path="/historicDistrict/openRestaurant" element={<HistoricOpenRestaurantPage />} />
-        <Route path="/admin" element={<AdminHistoricPage />} />
-        <Route path="/admin/cd" element={<AdminHomeIndustryPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin" element={<ProtectedRoute><AdminHistoricPage /></ProtectedRoute>} />
+        <Route path="/admin/cd" element={<ProtectedRoute><AdminHomeIndustryPage /></ProtectedRoute>} />
         <Route path="/homeIndustry" element={<HomeIndustryHomePage />} />
         <Route path="/homeIndustry/:moduleCode" element={<ModuleDetailPage />} />
 
