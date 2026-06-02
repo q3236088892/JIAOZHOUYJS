@@ -116,6 +116,15 @@ export function createApp() {
   app.use('/api/admin/cd', authMiddleware, homeAdminRoutes)
 
   app.use('/uploads', express.static(uploadsDir))
+
+  const distDir = path.join(__dirname, '..', 'frontend', 'dist')
+  if (fs.existsSync(distDir)) {
+    app.use(express.static(distDir))
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distDir, 'index.html'))
+    })
+  }
+
   app.use((err, req, res, next) => {
     if (res.headersSent) return next(err)
     res.status(500).json({ code: 500, msg: err?.message || 'internal server error' })
