@@ -56,6 +56,15 @@ function getNodeContent(node) {
   return normalizeNodeContent(content)
 }
 
+function getContentFields(content) {
+  return (content.fields || [])
+    .map((field) => ({
+      label: field.field_label || field.label,
+      value: field.field_value || field.value
+    }))
+    .filter((field) => field.label && field.value)
+}
+
 function normalizeText(value) {
   return String(value || '').replace(/\s+/g, '')
 }
@@ -171,12 +180,18 @@ function LeafContent({ node }) {
         </a>
       )}
 
-      {content.content_type === 'info' && content.fields && content.fields.length > 0 && (
+      {content.content_type === 'info' && content.summary && (
+        <div className="hd-topic-description">
+          <p style={{ textIndent: 0, whiteSpace: 'pre-wrap' }}>{content.summary}</p>
+        </div>
+      )}
+
+      {content.content_type === 'info' && getContentFields(content).length > 0 && (
         <div className="hd-topic-info">
-          {content.fields.map((f, i) => (
+          {getContentFields(content).map((f, i) => (
             <div key={i} className="hd-topic-info-field">
-              <span className="label">{f.field_label}</span>
-              <span className="value">{f.field_value}</span>
+              <span className="label">{f.label}</span>
+              <span className="value">{f.value}</span>
             </div>
           ))}
         </div>
@@ -239,7 +254,7 @@ function TopicCard({ node, emoji, expanded, onToggle }) {
 
     if (isLink) {
       return (
-        <article id={`node-${node.id}`} className="hd-topic-card">
+        <article id={`node-${node.id}`} className="hd-topic-card hd-service-detail-card hd-service-detail-card--link">
           <a
             href={content.link_url}
             target={content.link_target || '_blank'}
@@ -258,7 +273,7 @@ function TopicCard({ node, emoji, expanded, onToggle }) {
 
     if (bodyOnly) {
       return (
-        <article id={`node-${node.id}`} className="hd-topic-card">
+        <article id={`node-${node.id}`} className="hd-topic-card hd-service-detail-card">
           <div className="hd-topic-body hd-topic-body--standalone">
             <LeafContent node={node} />
           </div>
@@ -267,7 +282,7 @@ function TopicCard({ node, emoji, expanded, onToggle }) {
     }
 
     return (
-      <article id={`node-${node.id}`} className="hd-topic-card">
+      <article id={`node-${node.id}`} className="hd-topic-card hd-service-detail-card">
         <div className="hd-topic-title" style={{ cursor: 'default' }}>
           <span className="hd-topic-title__text">
             <span className="hd-topic-title__icon" aria-hidden="true">{emoji}</span>
@@ -285,7 +300,7 @@ function TopicCard({ node, emoji, expanded, onToggle }) {
 
   // Branch node: expandable to show children
   return (
-    <article id={`node-${node.id}`} className="hd-topic-card">
+    <article id={`node-${node.id}`} className="hd-topic-card hd-service-detail-card">
       <button
         type="button"
         className="hd-topic-title"
@@ -317,9 +332,10 @@ function TopicCard({ node, emoji, expanded, onToggle }) {
 /**
  * Render the right side content: Stage sections → Category blocks → Topic cards
  */
-function RightContent({ tree, expanded, onToggle }) {
+function RightContent({ tree, expanded, onToggle, moduleInfo }) {
+  const isIndustryChain = moduleInfo?.code === 'industry_chain'
   return (
-    <div className="hd-right-content">
+    <div className={`hd-right-content${isIndustryChain ? ' hd-right-content--chain' : ''}`}>
       {tree.filter(n => n.node_type === 'branch').map((level1, stageIdx) => (
         <section
           key={level1.id}
@@ -496,7 +512,7 @@ export default function ModuleDetailPage() {
     <div className="hd-detail-page" style={pageStyle}>
       <header className="hd-top-nav">
         <ul>
-          <li><Link to="/homeIndustry">历史首页</Link></li>
+          <li><Link to="/homeIndustry">首页</Link></li>
           {allModules.map((m) => (
             <li key={m.id}>
               <Link to={`/homeIndustry/${m.code}`} style={m.code === moduleCode ? { fontWeight: 700, background: 'rgba(255,255,255,0.15)' } : undefined}>
@@ -558,15 +574,13 @@ export default function ModuleDetailPage() {
           </div>
         </aside>
 
-        <RightContent tree={tree} expanded={expanded} onToggle={toggle} />
+        <RightContent tree={tree} expanded={expanded} onToggle={toggle} moduleInfo={moduleInfo} />
       </div>
 
       <footer className="hd-footer">
         <div className="hd-footer__divider1" />
         <div className="hd-footer__divider2" />
-        <div className="hd-footer__body">
-          胶州市家居产业服务"一类事"
-        </div>
+        <div className="hd-footer__body">胶州市家居产业服务“一类事”</div>
       </footer>
 
       <button
