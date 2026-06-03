@@ -5,7 +5,8 @@ import {
   getTree, getNodeById, getNodeWithContent, getChildren,
   createNode, updateNode, deleteNodeCascade, moveNode,
   upsertContent, createContentField, updateContentField, deleteContentField,
-  getModuleStats
+  getModuleStats,
+  getAllSettings, setSetting
 } from './repository.js'
 import { importFromBuffer } from './import.js'
 
@@ -160,13 +161,27 @@ router.put('/nodes/:id/move', (req, res) => {
   res.json({ code: 200, msg: 'success' })
 })
 
+// ── Site Settings ──
+
+router.get('/settings', (req, res) => {
+  res.json({ code: 200, data: getAllSettings(), msg: 'success' })
+})
+
+router.put('/settings/:key', (req, res) => {
+  const { key } = req.params
+  const { value } = req.body || {}
+  if (value === undefined) return res.status(400).json({ code: 400, msg: 'value is required' })
+  setSetting(key, value == null ? null : String(value))
+  res.json({ code: 200, data: getAllSettings(), msg: 'success' })
+})
+
 // ── Content ──
 
 router.put('/contents/:nodeId', (req, res) => {
   const nodeId = asNumberId(req.params.nodeId)
   if (!nodeId) return res.status(400).json({ code: 400, msg: 'invalid node id' })
 
-  const { content_type, summary, link_url, link_label, link_target, body, department, remark, fields } = req.body || {}
+  const { content_type, summary, link_url, link_label, link_target, body, department, remark, attachment_url, attachment_name, fields } = req.body || {}
 
   const contentData = {}
   if (content_type != null) contentData.content_type = content_type
@@ -177,6 +192,8 @@ router.put('/contents/:nodeId', (req, res) => {
   if (body != null) contentData.body = body
   if (department != null) contentData.department = department
   if (remark != null) contentData.remark = remark
+  if (attachment_url !== undefined) contentData.attachment_url = attachment_url || null
+  if (attachment_name !== undefined) contentData.attachment_name = attachment_name || null
 
   upsertContent(nodeId, contentData, fields || [])
   const data = getNodeWithContent(nodeId)

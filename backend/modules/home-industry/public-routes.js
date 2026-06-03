@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import {
   getModules, getModuleByCode,
-  getTree, getNodeWithContent, getModuleStats
+  getTree, getNodeWithContent, getModuleStats,
+  getAllSettings
 } from './repository.js'
 
 const router = Router()
@@ -18,6 +19,10 @@ router.get('/modules/:code/tree', (req, res) => {
   const tree = getTree(module_.id)
   const stats = getModuleStats(module_.id)
   res.json({ code: 200, data: { module: module_, tree, stats }, msg: 'success' })
+})
+
+router.get('/settings', (req, res) => {
+  res.json({ code: 200, data: getAllSettings(), msg: 'success' })
 })
 
 router.get('/nodes/:id', (req, res) => {

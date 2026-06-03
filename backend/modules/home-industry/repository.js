@@ -42,7 +42,8 @@ export function deleteModule(id) {
 export function getTree(moduleId) {
   const rows = querySql(`
     SELECT n.*, c.content_type, c.summary, c.department, c.remark,
-           c.link_url, c.link_label, c.link_target, c.body
+           c.link_url, c.link_label, c.link_target, c.body,
+           c.attachment_url, c.attachment_name
     FROM cd_node n
     LEFT JOIN cd_content c ON c.node_id = n.id
     WHERE n.module_id = ? AND n.is_active = 1
@@ -228,4 +229,27 @@ export function getModuleStats(moduleId) {
   const nodeCount = querySql('SELECT COUNT(*) AS cnt FROM cd_node WHERE module_id=? AND is_active=1', [moduleId])[0]?.cnt ?? 0
   const leafCount = querySql('SELECT COUNT(*) AS cnt FROM cd_node WHERE module_id=? AND node_type=\'leaf\' AND is_active=1', [moduleId])[0]?.cnt ?? 0
   return { nodeCount, leafCount }
+}
+
+// ── Site-wide settings ──
+
+export function getSetting(key) {
+  const row = querySql('SELECT value FROM cd_setting WHERE key=? LIMIT 1', [key])[0]
+  return row?.value ?? null
+}
+
+export function getAllSettings() {
+  const rows = querySql('SELECT key, value FROM cd_setting')
+  const obj = {}
+  for (const r of rows) obj[r.key] = r.value
+  return obj
+}
+
+export function setSetting(key, value) {
+  runSql(
+    `INSERT INTO cd_setting (key, value, updated_at)
+     VALUES (?, ?, datetime('now','localtime'))
+     ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=datetime('now','localtime')`,
+    [key, value]
+  )
 }

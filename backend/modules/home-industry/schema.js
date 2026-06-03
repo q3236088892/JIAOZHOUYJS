@@ -40,9 +40,15 @@ export function ensureHomeIndustryTables(db) {
     body TEXT,
     department TEXT,
     remark TEXT,
+    attachment_url TEXT,
+    attachment_name TEXT,
     created_at TEXT DEFAULT (datetime('now','localtime')),
     updated_at TEXT DEFAULT (datetime('now','localtime'))
   )`)
+
+  // Migration: add attachment columns if missing (for older databases)
+  try { db.run(`ALTER TABLE cd_content ADD COLUMN attachment_url TEXT`) } catch {}
+  try { db.run(`ALTER TABLE cd_content ADD COLUMN attachment_name TEXT`) } catch {}
 
   db.run(`CREATE TABLE IF NOT EXISTS cd_content_field (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,4 +61,10 @@ export function ensureHomeIndustryTables(db) {
   )`)
 
   db.run(`CREATE INDEX IF NOT EXISTS idx_cd_field_content ON cd_content_field(content_id)`)
+
+  db.run(`CREATE TABLE IF NOT EXISTS cd_setting (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+  )`)
 }

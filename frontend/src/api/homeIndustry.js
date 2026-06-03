@@ -4,6 +4,9 @@ import api from './index'
 export const getCdModules = () => api.get('/cd/public/modules')
 export const getCdModuleTree = (code) => api.get(`/cd/public/modules/${code}/tree`)
 export const getCdNodeDetail = (id) => api.get(`/cd/public/nodes/${id}`)
+export const getCdPublicSettings = () => api.get('/cd/public/settings')
+
+// Admin - Modules
 
 // Admin - Modules
 export const getAdminCdModules = () => api.get('/admin/cd/modules')
@@ -23,6 +26,10 @@ export const updateAdminCdContent = (nodeId, data) => api.put(`/admin/cd/content
 export const createAdminCdField = (data) => api.post('/admin/cd/content-fields', data)
 export const updateAdminCdField = (id, data) => api.put(`/admin/cd/content-fields/${id}`, data)
 export const deleteAdminCdField = (id) => api.delete(`/admin/cd/content-fields/${id}`)
+
+// Admin - Settings
+export const getAdminCdSettings = () => api.get('/admin/cd/settings')
+export const updateAdminCdSetting = (key, value) => api.put(`/admin/cd/settings/${key}`, { value })
 
 // Admin - Upload
 export const uploadCdImage = (file) => {

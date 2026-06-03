@@ -4,7 +4,8 @@ import { Button, Input, Modal, Select, Space, Tree, message, Tag, Popconfirm, Dr
 import { PlusOutlined, DeleteOutlined, ImportOutlined, FolderOutlined, FileTextOutlined, DownOutlined, PictureOutlined, UploadOutlined } from '@ant-design/icons'
 import {
   getAdminCdModules, createAdminCdModule, updateAdminCdModule, uploadCdImage,
-  getAdminCdTree, createAdminCdNode, updateAdminCdNode, deleteAdminCdNode
+  getAdminCdTree, createAdminCdNode, updateAdminCdNode, deleteAdminCdNode,
+  getAdminCdSettings, updateAdminCdSetting
 } from '../../api/homeIndustry'
 import { toAntdTreeData, findNodeInTree, collectExpandedKeys } from '../../utils/homeIndustryTree'
 import ContentEditor from './ContentEditor'
@@ -29,6 +30,7 @@ export default function AdminHomeIndustryPage() {
   const [showModuleSettings, setShowModuleSettings] = useState(false)
   const [moduleSettings, setModuleSettings] = useState({ home_banner_url: '', detail_banner_url: '' })
   const [savingSettings, setSavingSettings] = useState(false)
+  const [siteSettings, setSiteSettings] = useState({ home_banner: '' })
 
   const loadModules = useCallback(async () => {
     try {
@@ -60,6 +62,12 @@ export default function AdminHomeIndustryPage() {
 
   useEffect(() => { loadModules() }, [loadModules])
   useEffect(() => { loadTree() }, [loadTree])
+
+  useEffect(() => {
+    getAdminCdSettings()
+      .then((res) => { if (res.data.code === 200) setSiteSettings({ home_banner: res.data.data.home_banner || '' }) })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const mod = modules.find(m => m.id === selectedModuleId)
@@ -140,6 +148,19 @@ export default function AdminHomeIndustryPage() {
     }
   }
 
+  const handleHomeBannerUpload = async (file) => {
+    try {
+      const res = await uploadCdImage(file)
+      if (res.data.code === 200) {
+        await updateAdminCdSetting('home_banner', res.data.data.url)
+        setSiteSettings({ home_banner: res.data.data.url })
+        message.success('首页 Banner 上传成功')
+      }
+    } catch {
+      message.error('上传失败')
+    }
+  }
+
   const handleImportSuccess = () => {
     setShowImport(false)
     loadTree()
@@ -214,49 +235,108 @@ export default function AdminHomeIndustryPage() {
           </Button>
         </Space>
 
-        {showModuleSettings && selectedModuleId && (
-          <div style={{ marginBottom: 16, padding: 16, background: '#fafafa', borderRadius: 8, border: '1px solid #e5e7eb' }}>
-            <div style={{ fontWeight: 600, marginBottom: 12 }}>Banner 图片设置</div>
-            <Space size="large" wrap>
-              <div>
-                <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>首页 Banner</div>
-                {moduleSettings.home_banner_url && (
+        {showModuleSettings && (
+          <div style={{ marginBottom: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {/* Left card - 网站首页 Banner */}
+            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontWeight: 600, fontSize: 14, color: '#1e2a3e' }}>网站首页 Banner</div>
+                <Tag color="purple" style={{ marginLeft: 8, fontSize: 12 }}>网站级</Tag>
+              </div>
+              <div style={{
+                width: '100%',
+                aspectRatio: '16 / 5',
+                background: '#f5f7fb',
+                border: '1px dashed #d9d9d9',
+                borderRadius: 6,
+                marginBottom: 12,
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#aaa',
+                fontSize: 13
+              }}>
+                {siteSettings.home_banner ? (
                   <img
-                    src={moduleSettings.home_banner_url}
-                    alt="首页Banner"
-                    style={{ width: 300, height: 60, objectFit: 'cover', borderRadius: 4, marginBottom: 8, display: 'block', border: '1px solid #e5e7eb' }}
+                    src={siteSettings.home_banner}
+                    alt="网站首页Banner"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
+                ) : (
+                  <span>暂无图片，点击下方按钮上传</span>
                 )}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12, color: '#999' }}>
+                  应用于：<code style={{ background: '#f0f0f0', padding: '0 4px', borderRadius: 3 }}>/homeIndustry</code>
+                </span>
                 <Upload
                   accept="image/*"
                   showUploadList={false}
-                  customRequest={({ file }) => handleBannerUpload(file, 'home_banner_url')}
+                  customRequest={({ file }) => handleHomeBannerUpload(file)}
                 >
-                  <Button icon={<UploadOutlined />} size="small">
-                    {moduleSettings.home_banner_url ? '更换' : '上传'}首页Banner
+                  <Button type="primary" icon={<UploadOutlined />} size="small">
+                    {siteSettings.home_banner ? '更换图片' : '上传图片'}
                   </Button>
                 </Upload>
               </div>
-              <div>
-                <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>详情页 Banner</div>
-                {moduleSettings.detail_banner_url && (
+            </div>
+
+            {/* Right card - 各模块详情页 Banner */}
+            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ fontWeight: 600, fontSize: 14, color: '#1e2a3e' }}>模块详情页 Banner</div>
+                <Tag color="blue" style={{ fontSize: 12 }}>按模块</Tag>
+                <div style={{ marginLeft: 'auto' }}>
+                  <Select
+                    size="small"
+                    style={{ width: 140 }}
+                    value={selectedModuleId}
+                    onChange={(v) => { setSelectedModuleId(v); setSelectedNodeId(null); setSelectedNode(null) }}
+                    options={modules.map((m) => ({ label: m.title, value: m.id }))}
+                  />
+                </div>
+              </div>
+              <div style={{
+                width: '100%',
+                aspectRatio: '16 / 5',
+                background: '#f5f7fb',
+                border: '1px dashed #d9d9d9',
+                borderRadius: 6,
+                marginBottom: 12,
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#aaa',
+                fontSize: 13
+              }}>
+                {moduleSettings.detail_banner_url ? (
                   <img
                     src={moduleSettings.detail_banner_url}
                     alt="详情页Banner"
-                    style={{ width: 300, height: 60, objectFit: 'cover', borderRadius: 4, marginBottom: 8, display: 'block', border: '1px solid #e5e7eb' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
+                ) : (
+                  <span>{modules.find(m => m.id === selectedModuleId)?.title || '该模块'} 暂无图片</span>
                 )}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12, color: '#999' }}>
+                  当前：<span style={{ color: '#427aff', fontWeight: 500 }}>{modules.find(m => m.id === selectedModuleId)?.title || '-'}</span>
+                </span>
                 <Upload
                   accept="image/*"
                   showUploadList={false}
                   customRequest={({ file }) => handleBannerUpload(file, 'detail_banner_url')}
                 >
-                  <Button icon={<UploadOutlined />} size="small">
-                    {moduleSettings.detail_banner_url ? '更换' : '上传'}详情页Banner
+                  <Button type="primary" icon={<UploadOutlined />} size="small">
+                    {moduleSettings.detail_banner_url ? '更换图片' : '上传图片'}
                   </Button>
                 </Upload>
               </div>
-            </Space>
+            </div>
           </div>
         )}
 

@@ -4,7 +4,7 @@ import {
   PlusOutlined, MinusCircleOutlined, SaveOutlined, DeleteOutlined,
   HolderOutlined, ArrowUpOutlined, ArrowDownOutlined,
   FileTextOutlined, PictureOutlined, PlayCircleOutlined, TableOutlined,
-  UploadOutlined
+  UploadOutlined, PaperClipOutlined
 } from '@ant-design/icons'
 import {
   getAdminCdModules,
@@ -34,6 +34,8 @@ function getNodeContent(node) {
     link_label: node.link_label,
     link_target: node.link_target,
     body: node.body,
+    attachment_url: node.attachment_url,
+    attachment_name: node.attachment_name,
     fields: node.fields || []
   }
   return normalizeNodeContent(content)
@@ -154,6 +156,91 @@ function ImageBlockEditor({ block, onChange }) {
   )
 }
 
+function AttachmentEditor({ url, name, onChange }) {
+  const fileInputRef = useRef(null)
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const res = await uploadCdImage(file)
+      if (res.data.code === 200) {
+        onChange(res.data.data.url, file.name)
+        message.success('附件上传成功')
+      } else {
+        message.error(res.data.msg || '附件上传失败')
+      }
+    } catch (err) {
+      message.error('附件上传失败')
+    }
+    e.target.value = ''
+  }
+
+  const handleClear = () => {
+    onChange('', '')
+  }
+
+  return (
+    <div>
+      {url ? (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '10px 14px',
+          marginBottom: 10,
+          border: '1px dashed #d9d9d9',
+          borderRadius: 6,
+          background: '#fafafa'
+        }}>
+          <PaperClipOutlined style={{ color: '#427aff', fontSize: 18 }} />
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ flex: 1, color: '#1e2a3e', wordBreak: 'break-all' }}
+          >
+            {name || url.split('/').pop()}
+          </a>
+          <Button size="small" danger type="text" onClick={handleClear}>
+            移除
+          </Button>
+        </div>
+      ) : (
+        <div style={{
+          padding: '14px',
+          marginBottom: 10,
+          border: '1px dashed #d9d9d9',
+          borderRadius: 6,
+          background: '#fafafa',
+          color: '#999',
+          fontSize: 13,
+          textAlign: 'center'
+        }}>
+          暂无附件
+        </div>
+      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xls,.xlsx,.pdf,.doc,.docx,.zip"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+      />
+      <Button
+        icon={<UploadOutlined />}
+        size="small"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        {url ? '更换附件' : '上传附件'}
+      </Button>
+      <span style={{ marginLeft: 12, color: '#999', fontSize: 12 }}>
+        支持 xls/xlsx/pdf/doc/docx/zip
+      </span>
+    </div>
+  )
+}
+
 function VideoBlockEditor({ block, onChange }) {
   return (
     <div>
@@ -270,6 +357,8 @@ export default function ContentEditor({ node, onRefresh }) {
   const [saving, setSaving] = useState(false)
   const [blocks, setBlocks] = useState([])
   const [legacyFields, setLegacyFields] = useState([])
+  const [attachmentUrl, setAttachmentUrl] = useState('')
+  const [attachmentName, setAttachmentName] = useState('')
 
   useEffect(() => {
     if (!node) return
@@ -287,6 +376,8 @@ export default function ContentEditor({ node, onRefresh }) {
     }
 
     setContentType(ct)
+    setAttachmentUrl(content.attachment_url || '')
+    setAttachmentName(content.attachment_name || '')
 
     form.setFieldsValue({
       title: node.title,
@@ -370,7 +461,9 @@ export default function ContentEditor({ node, onRefresh }) {
           content_type: effectiveType,
           summary: values.summary || null,
           department: values.department || null,
-          remark: values.remark || null
+          remark: values.remark || null,
+          attachment_url: attachmentUrl || null,
+          attachment_name: attachmentName || null
         }
 
         if (effectiveType === 'link') {
@@ -463,6 +556,18 @@ export default function ContentEditor({ node, onRefresh }) {
                   <Form.Item name="remark" label="备注">
                     <TextArea rows={2} />
                   </Form.Item>
+                </div>
+
+                <div className="ce-section">
+                  <div className="ce-section-title">附件</div>
+                  <AttachmentEditor
+                    url={attachmentUrl}
+                    name={attachmentName}
+                    onChange={(url, filename) => {
+                      setAttachmentUrl(url)
+                      setAttachmentName(filename)
+                    }}
+                  />
                 </div>
 
                 {contentType === 'link' && (

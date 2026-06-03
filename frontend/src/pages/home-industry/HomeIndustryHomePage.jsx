@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getCdModules } from '../../api/homeIndustry'
+import { getCdModules, getCdPublicSettings } from '../../api/homeIndustry'
 import '../../styles/historic.css'
 
 const ICON_BASE = '/historic/icons'
@@ -46,6 +46,7 @@ function HeroTitle({ title }) {
 
 export default function HomeIndustryHomePage() {
   const [modules, setModules] = useState([])
+  const [homeBanner, setHomeBanner] = useState('')
 
   useEffect(() => {
     getCdModules()
@@ -53,9 +54,12 @@ export default function HomeIndustryHomePage() {
         if (res.data.code === 200) setModules(res.data.data)
       })
       .catch(() => {})
+    getCdPublicSettings()
+      .then((res) => { if (res.data.code === 200) setHomeBanner(res.data.data.home_banner || '') })
+      .catch(() => {})
   }, [])
 
-  const homeBannerUrl = modules.find(m => m.home_banner_url)?.home_banner_url
+  const homeBannerUrl = homeBanner
   const pageStyle = homeBannerUrl
     ? { backgroundImage: `url(${homeBannerUrl})`, backgroundRepeat: 'no-repeat', backgroundPosition: 'top center', backgroundSize: '100% 48vh', backgroundColor: '#f7fbff' }
     : undefined

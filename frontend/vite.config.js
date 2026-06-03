@@ -3,6 +3,12 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  esbuild: {
+    charset: 'utf8'
+  },
+  build: {
+    charset: 'utf8'
+  },
   server: {
     port: 3000,
     strictPort: true,

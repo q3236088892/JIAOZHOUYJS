@@ -48,6 +48,8 @@ function getNodeContent(node) {
     link_label: node.link_label,
     link_target: node.link_target,
     body: node.body,
+    attachment_url: node.attachment_url,
+    attachment_name: node.attachment_name,
     fields: node.fields || []
   }
 
@@ -196,6 +198,24 @@ function LeafContent({ node }) {
             <span className="label">提供部门</span>
             <span className="value">{content.department}</span>
           </div>
+        </div>
+      )}
+
+      {content.attachment_url && (
+        <div style={{ marginTop: 16 }}>
+          <a
+            href={content.attachment_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={content.attachment_name || ''}
+            className="hd-attachment-link"
+          >
+            <span className="hd-attachment-link__icon" aria-hidden="true">📎</span>
+            <span className="hd-attachment-link__text">
+              下载附件：{content.attachment_name || content.attachment_url.split('/').pop()}
+            </span>
+            <span className="hd-attachment-link__arrow">⬇</span>
+          </a>
         </div>
       )}
     </>
