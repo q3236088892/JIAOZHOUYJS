@@ -22,6 +22,43 @@ const fallbackIcons = [
   `${ICON_BASE}/organize_performance.png`
 ]
 
+const HOME_TITLE = '胶州市家居产业服务“一类事”'
+
+const serviceGroups = [
+  {
+    key: 'industry-chain',
+    title: '家居产业链服务',
+    className: 'hd-home-service-group--chain',
+    entries: [
+      { key: 'upstream', label: '上游', description: '原辅料采购、仓储', moduleCodes: ['industry_chain'], titleKeywords: ['产业链', '上游', '原辅料', '仓储'] },
+      { key: 'midstream', label: '中游', description: '生产制造', moduleCodes: ['industry_chain'], titleKeywords: ['产业链', '中游', '生产制造'] },
+      { key: 'downstream', label: '下游', description: '销售出海', moduleCodes: ['industry_chain'], titleKeywords: ['产业链', '下游', '销售出海'] }
+    ]
+  },
+  {
+    key: 'enterprise-support',
+    title: '利企配套服务',
+    className: 'hd-home-service-group--support',
+    entries: [
+      { key: 'tax', label: '财税服务', moduleCodes: ['enterprise_support', 'tax_service'], titleKeywords: ['利企配套', '财税'] },
+      { key: 'human-resource', label: '人力资源服务', moduleCodes: ['enterprise_support', 'hr_service', 'human_resource'], titleKeywords: ['利企配套', '人力', '人力资源'] },
+      { key: 'construction', label: '项目施工服务', moduleCodes: ['enterprise_support', 'project_service', 'construction_service'], titleKeywords: ['利企配套', '项目施工', '施工'] },
+      { key: 'agency', label: '中介服务', moduleCodes: ['enterprise_support', 'agency_service'], titleKeywords: ['利企配套', '中介'] }
+    ]
+  }
+]
+
+function textIncludesAny(value, keywords = []) {
+  const text = String(value || '')
+  return keywords.some((keyword) => text.includes(keyword))
+}
+
+function findEntryModule(entry, modules) {
+  const byCode = modules.find((module) => entry.moduleCodes?.includes(module.code))
+  if (byCode) return byCode
+  return modules.find((module) => textIncludesAny(module.title, entry.titleKeywords))
+}
+
 function getModuleIcon(module, index) {
   if (module.icon_url) return module.icon_url
   if (moduleIcons[module.code]) return moduleIcons[module.code]
@@ -29,18 +66,72 @@ function getModuleIcon(module, index) {
 }
 
 function HeroTitle({ title }) {
-  const text = title || '胶州市家居产业服务"一类事"'
+  const text = title || HOME_TITLE
   const oneTypeKey = '一类事'
   const idx = text.indexOf(oneTypeKey)
   if (idx === -1) return <h1>{text}</h1>
   return (
     <h1>
       {text.substring(0, idx)}
-      <span className="hd-quote">"</span>
+      <span className="hd-quote">“</span>
       {oneTypeKey}
-      <span className="hd-quote">"</span>
+      <span className="hd-quote">”</span>
       {text.substring(idx + oneTypeKey.length)}
     </h1>
+  )
+}
+
+function HomeServiceEntry({ entry, module, index }) {
+  const content = (
+    <>
+      <img
+        className="hd-home-service-card__icon"
+        src={module ? getModuleIcon(module, index) : fallbackIcons[index % fallbackIcons.length]}
+        alt=""
+        aria-hidden="true"
+        onError={(event) => { event.currentTarget.style.visibility = 'hidden' }}
+      />
+      <span className="hd-home-service-card__text">
+        <strong>{entry.label}</strong>
+        {entry.description && <small>{entry.description}</small>}
+      </span>
+    </>
+  )
+
+  if (!module) {
+    return (
+      <li className="hd-home-service-item">
+        <span className="hd-home-service-card hd-home-service-card--disabled" aria-disabled="true">
+          {content}
+        </span>
+      </li>
+    )
+  }
+
+  return (
+    <li className="hd-home-service-item">
+      <Link to={`/homeIndustry/${module.code}`} className="hd-home-service-card">
+        {content}
+      </Link>
+    </li>
+  )
+}
+
+function HomeServiceGroup({ group, modules }) {
+  return (
+    <section className={`hd-home-service-group ${group.className}`}>
+      <h2 className="hd-home-service-title">{group.title}</h2>
+      <ul className="hd-home-service-grid">
+        {group.entries.map((entry, index) => (
+          <HomeServiceEntry
+            key={entry.key}
+            entry={entry}
+            module={findEntryModule(entry, modules)}
+            index={index}
+          />
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -68,7 +159,7 @@ export default function HomeIndustryHomePage() {
     <div className="hd-page cd-home-wrap" style={pageStyle}>
       <header className="hd-top-nav">
         <ul>
-          <li><Link to="/homeIndustry">历史首页</Link></li>
+          <li><Link to="/homeIndustry">首页</Link></li>
           {modules.map((m) => (
             <li key={m.id}>
               <Link to={`/homeIndustry/${m.code}`}>{m.title}</Link>
@@ -79,37 +170,22 @@ export default function HomeIndustryHomePage() {
 
       <div className="cd-home-body">
         <div className="hd-hero">
-          <HeroTitle title={'胶州市家居产业服务"一类事"'} />
+          <HeroTitle title={HOME_TITLE} />
         </div>
 
         <div className="hd-container">
-          <section className="hd-section">
+          <section className="hd-section hd-home-overview">
             <h2 className="hd-section-title">
               <img src={`${ICON_BASE}/title_deco_left.png`} alt="" aria-hidden="true" />
-              选择您想了解和从事的板块
+              选择您想了解和办理的服务
               <img src={`${ICON_BASE}/title_deco_right.png`} alt="" aria-hidden="true" />
             </h2>
-            <ul className="hd-card-grid">
-              {modules.map((m, idx) => (
-                <li key={m.id} className="hd-card-item">
-                  <Link
-                    to={`/homeIndustry/${m.code}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hd-card-link"
-                  >
-                    <img
-                      className="hd-card-link__icon"
-                      src={getModuleIcon(m, idx)}
-                      alt=""
-                      aria-hidden="true"
-                      onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
-                    />
-                    <span>{m.title}</span>
-                  </Link>
-                </li>
+
+            <div className="hd-home-service-board">
+              {serviceGroups.map((group) => (
+                <HomeServiceGroup key={group.key} group={group} modules={modules} />
               ))}
-            </ul>
+            </div>
           </section>
         </div>
       </div>
@@ -117,9 +193,7 @@ export default function HomeIndustryHomePage() {
       <footer className="hd-footer">
         <div className="hd-footer__divider1" />
         <div className="hd-footer__divider2" />
-        <div className="hd-footer__body">
-          胶州市家居产业服务"一类事"
-        </div>
+        <div className="hd-footer__body">{HOME_TITLE}</div>
       </footer>
     </div>
   )
