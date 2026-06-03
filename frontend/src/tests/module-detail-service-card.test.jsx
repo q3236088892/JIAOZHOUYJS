@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import ModuleDetailPage from '../pages/home-industry/ModuleDetailPage'
 
 vi.mock('../api/homeIndustry', () => ({
-  getCdModules: () => Promise.resolve({ data: { code: 200, data: [{ id: 1, code: 'enterprise_support', title: '利企配套服务' }] } }),
+  getCdModules: () => Promise.resolve({ data: { code: 200, data: [{ id: 1, code: 'value_added', title: '增值服务' }] } }),
   getCdModuleTree: () =>
     Promise.resolve({
       data: {
         code: 200,
         data: {
-          module: { id: 1, code: 'enterprise_support', title: '利企配套服务' },
+          module: { id: 1, code: 'value_added', title: '增值服务' },
           tree: [
             {
               id: 1,
@@ -48,6 +48,43 @@ vi.mock('../api/homeIndustry', () => ({
                   ]
                 }
               ]
+            },
+            {
+              id: 5,
+              title: '（二）项目服务',
+              node_type: 'branch',
+              children: [
+                {
+                  id: 6,
+                  title: '项目立项',
+                  node_type: 'branch',
+                  children: [
+                    {
+                      id: 7,
+                      title: '企业投资项目核准/备案',
+                      node_type: 'leaf',
+                      content_type: 'info',
+                      summary: '项目立项手续办理指引。',
+                      children: []
+                    }
+                  ]
+                },
+                {
+                  id: 8,
+                  title: '施工许可',
+                  node_type: 'branch',
+                  children: [
+                    {
+                      id: 9,
+                      title: '房屋建筑工程施工许可',
+                      node_type: 'leaf',
+                      content_type: 'info',
+                      summary: '施工许可办理指引。',
+                      children: []
+                    }
+                  ]
+                }
+              ]
             }
           ],
           stats: {}
@@ -68,6 +105,7 @@ describe('ModuleDetailPage service cards', () => {
   })
 
   afterEach(() => {
+    cleanup()
     vi.unstubAllGlobals()
   })
 
@@ -87,5 +125,26 @@ describe('ModuleDetailPage service cards', () => {
 
     const applyLink = screen.getByRole('link', { name: /我要申报/ })
     expect(applyLink).toHaveAttribute('href', 'https://example.com/apply')
+  })
+
+  it('filters value-added detail page to the requested top navigation section', async () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/homeIndustry/value_added?section=project']}>
+        <Routes>
+          <Route path="/homeIndustry/:moduleCode" element={<ModuleDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(await screen.findByText('企业投资项目核准/备案')).toBeInTheDocument()
+    expect(screen.getByText('房屋建筑工程施工许可')).toBeInTheDocument()
+    expect(screen.queryByText('企业注册登记住所预指导服务')).not.toBeInTheDocument()
+
+    const leftMenu = container.querySelector('.hd-left-menu')
+    expect(leftMenu).not.toBeNull()
+    expect(leftMenu).toHaveTextContent('（二）项目服务')
+    expect(leftMenu).toHaveTextContent('项目立项')
+    expect(leftMenu).toHaveTextContent('施工许可')
+    expect(leftMenu).not.toHaveTextContent('政策服务')
   })
 })

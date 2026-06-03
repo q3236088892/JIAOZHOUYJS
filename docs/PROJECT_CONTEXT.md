@@ -169,6 +169,26 @@ node = {
 
 ## 最近重要改动记录
 
+### 2026-06-03：首页顶部导航改为固定业务入口并支持详情分组过滤
+
+需求：家居产业首页顶部导航参考设计稿，不再平铺后台模块；点击“招商入驻、项目服务、政策服务、法律服务、人才服务、金融服务、帮办服务、国际贸易服务、‘一件事’延链拓面”等入口时，详情页应以左侧导航栏 + 右侧卡片详情形式展示，且只展示所选业务分组内容。
+
+处理：
+
+- 新增 `frontend/src/utils/homeIndustryNavigation.js`：集中维护顶部固定导航项、跳转地址和 `section` 分组筛选规则。
+- 顶部导航中的“招商入驻、项目服务、政策服务、法律服务、人才服务、金融服务、帮办服务、国际贸易服务、‘一件事’延链拓面”均对应 `value_added` 模块下的顶层分组，通过 `?section=` 精确过滤；不要误连到 `enterprise_support`，该模块仍用于首页“利企配套服务”服务卡片。
+- 顶部导航使用 `HomeIndustryTopNav.jsx` 共享组件，视觉为蓝色导航条内“线性小图标 + 文字”的入口样式，不使用白色边框按钮。
+- 首页“家居产业链服务”卡片分别跳转 `industry_chain?section=upstream|midstream|downstream`，只展示上游/中游/下游对应树分组；首页“利企配套服务”卡片分别跳转 `enterprise_support?section=tax|human-resource|construction|agency`，只展示财税/人力资源/项目施工/中介对应树分组。
+- `filterTreeByTopNavSection` 只匹配模块树顶层节点标题，不递归匹配子节点，避免例如上游子节点文案含“上下游”时误把上游带入“下游”筛选结果。
+- `HomeIndustryHomePage.jsx`：顶部导航改用固定业务入口；原首页分组服务卡片和 banner 逻辑保持不变。
+- `ModuleDetailPage.jsx`：读取 URL query 中的 `section`，对模块树递归筛选，仅将匹配业务分组传给左侧导航和右侧内容区；补充 `IntersectionObserver` 不存在时的环境保护，避免测试环境报错。
+- `historic.css`：顶部导航改为更紧凑的小按钮样式，适配参考图入口数量。
+
+相关回归测试：
+
+- `frontend/src/tests/home-industry-home-layout.test.jsx`
+- `frontend/src/tests/module-detail-service-card.test.jsx`
+
 ### 2026-06-01：后台增加登录认证
 
 需求：后台管理页面需要账号密码保护，防止未授权访问。

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { Spin } from 'antd'
-import { getCdModuleTree, getCdModules } from '../../api/homeIndustry'
+import { getCdModuleTree } from '../../api/homeIndustry'
+import HomeIndustryTopNav from '../../components/home-industry/HomeIndustryTopNav'
+import { filterTreeByTopNavSection } from '../../utils/homeIndustryNavigation'
 import '../../styles/historic.css'
 
 const STAGE_VARIANTS = ['hd-stage-section--alt1', 'hd-stage-section--alt2', 'hd-stage-section--alt3', 'hd-stage-section--alt4']
@@ -367,8 +369,8 @@ function RightContent({ tree, expanded, onToggle, moduleInfo }) {
 
 export default function ModuleDetailPage() {
   const { moduleCode } = useParams()
+  const location = useLocation()
   const [moduleInfo, setModuleInfo] = useState(null)
-  const [allModules, setAllModules] = useState([])
   const [tree, setTree] = useState([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(new Set())
@@ -377,7 +379,12 @@ export default function ModuleDetailPage() {
   const observerRef = useRef(null)
   const programmaticScrollUntil = useRef(0)
 
-  const leftMenu = useMemo(() => buildLeftMenu(tree), [tree])
+  const sectionKey = useMemo(() => new URLSearchParams(location.search).get('section'), [location.search])
+  const visibleTree = useMemo(
+    () => filterTreeByTopNavSection(tree, moduleCode, sectionKey),
+    [tree, moduleCode, sectionKey]
+  )
+  const leftMenu = useMemo(() => buildLeftMenu(visibleTree), [visibleTree])
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 
@@ -421,12 +428,22 @@ export default function ModuleDetailPage() {
       .catch(() => {})
       .finally(() => setLoading(false))
 
-    getCdModules()
-      .then((res) => {
-        if (res.data.code === 200) setAllModules(res.data.data)
-      })
-      .catch(() => {})
   }, [moduleCode])
+
+  useEffect(() => {
+    let firstAnchor = ''
+    const menu = buildLeftMenu(visibleTree)
+    for (const stage of menu) {
+      for (const cat of stage.categories) {
+        if (cat.items.length > 0 && !firstAnchor) {
+          firstAnchor = cat.items[0].anchorKey
+        }
+      }
+    }
+    setActiveAnchor(firstAnchor)
+    setExpanded(firstAnchor ? new Set([firstAnchor]) : new Set())
+    setMenuCollapsed(new Set())
+  }, [visibleTree])
 
   // Intersection observer for active menu highlighting
   useEffect(() => {
@@ -441,6 +458,7 @@ export default function ModuleDetailPage() {
       }
     }
     if (!anchors.length) return
+    if (typeof IntersectionObserver === 'undefined') return
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
@@ -510,18 +528,7 @@ export default function ModuleDetailPage() {
 
   return (
     <div className="hd-detail-page" style={pageStyle}>
-      <header className="hd-top-nav">
-        <ul>
-          <li><Link to="/homeIndustry">首页</Link></li>
-          {allModules.map((m) => (
-            <li key={m.id}>
-              <Link to={`/homeIndustry/${m.code}`} style={m.code === moduleCode ? { fontWeight: 700, background: 'rgba(255,255,255,0.15)' } : undefined}>
-                {m.title}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </header>
+      <HomeIndustryTopNav moduleCode={moduleCode} sectionKey={sectionKey} />
 
       <div className="hd-detail-hero">
         <h1>{moduleInfo?.title || '服务详情'}</h1>
@@ -574,7 +581,7 @@ export default function ModuleDetailPage() {
           </div>
         </aside>
 
-        <RightContent tree={tree} expanded={expanded} onToggle={toggle} moduleInfo={moduleInfo} />
+        <RightContent tree={visibleTree} expanded={expanded} onToggle={toggle} moduleInfo={moduleInfo} />
       </div>
 
       <footer className="hd-footer">

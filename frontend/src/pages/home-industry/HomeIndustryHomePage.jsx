@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getCdModules, getCdPublicSettings } from '../../api/homeIndustry'
+import HomeIndustryTopNav from '../../components/home-industry/HomeIndustryTopNav'
 import '../../styles/historic.css'
 
 const ICON_BASE = '/historic/icons'
@@ -30,9 +31,9 @@ const serviceGroups = [
     title: '家居产业链服务',
     className: 'hd-home-service-group--chain',
     entries: [
-      { key: 'upstream', label: '上游', description: '原辅料采购、仓储', moduleCodes: ['industry_chain'], titleKeywords: ['产业链', '上游', '原辅料', '仓储'] },
-      { key: 'midstream', label: '中游', description: '生产制造', moduleCodes: ['industry_chain'], titleKeywords: ['产业链', '中游', '生产制造'] },
-      { key: 'downstream', label: '下游', description: '销售出海', moduleCodes: ['industry_chain'], titleKeywords: ['产业链', '下游', '销售出海'] }
+      { key: 'upstream', label: '上游', description: '原辅料采购、仓储', moduleCodes: ['industry_chain'], section: 'upstream', titleKeywords: ['产业链', '上游', '原辅料', '仓储'] },
+      { key: 'midstream', label: '中游', description: '生产制造', moduleCodes: ['industry_chain'], section: 'midstream', titleKeywords: ['产业链', '中游', '生产制造'] },
+      { key: 'downstream', label: '下游', description: '销售出海', moduleCodes: ['industry_chain'], section: 'downstream', titleKeywords: ['产业链', '下游', '销售出海'] }
     ]
   },
   {
@@ -40,10 +41,10 @@ const serviceGroups = [
     title: '利企配套服务',
     className: 'hd-home-service-group--support',
     entries: [
-      { key: 'tax', label: '财税服务', moduleCodes: ['enterprise_support', 'tax_service'], titleKeywords: ['利企配套', '财税'] },
-      { key: 'human-resource', label: '人力资源服务', moduleCodes: ['enterprise_support', 'hr_service', 'human_resource'], titleKeywords: ['利企配套', '人力', '人力资源'] },
-      { key: 'construction', label: '项目施工服务', moduleCodes: ['enterprise_support', 'project_service', 'construction_service'], titleKeywords: ['利企配套', '项目施工', '施工'] },
-      { key: 'agency', label: '中介服务', moduleCodes: ['enterprise_support', 'agency_service'], titleKeywords: ['利企配套', '中介'] }
+      { key: 'tax', label: '财税服务', moduleCodes: ['enterprise_support', 'tax_service'], section: 'tax', titleKeywords: ['利企配套', '财税'] },
+      { key: 'human-resource', label: '人力资源服务', moduleCodes: ['enterprise_support', 'hr_service', 'human_resource'], section: 'human-resource', titleKeywords: ['利企配套', '人力', '人力资源'] },
+      { key: 'construction', label: '项目施工服务', moduleCodes: ['enterprise_support', 'project_service', 'construction_service'], section: 'construction', titleKeywords: ['利企配套', '项目施工', '施工'] },
+      { key: 'agency', label: '中介服务', moduleCodes: ['enterprise_support', 'agency_service'], section: 'agency', titleKeywords: ['利企配套', '中介'] }
     ]
   }
 ]
@@ -110,7 +111,7 @@ function HomeServiceEntry({ entry, module, index }) {
 
   return (
     <li className="hd-home-service-item">
-      <Link to={`/homeIndustry/${module.code}`} className="hd-home-service-card">
+      <Link to={`/homeIndustry/${module.code}${entry.section ? `?section=${entry.section}` : ''}`} className="hd-home-service-card">
         {content}
       </Link>
     </li>
@@ -157,16 +158,7 @@ export default function HomeIndustryHomePage() {
 
   return (
     <div className="hd-page cd-home-wrap" style={pageStyle}>
-      <header className="hd-top-nav">
-        <ul>
-          <li><Link to="/homeIndustry">首页</Link></li>
-          {modules.map((m) => (
-            <li key={m.id}>
-              <Link to={`/homeIndustry/${m.code}`}>{m.title}</Link>
-            </li>
-          ))}
-        </ul>
-      </header>
+      <HomeIndustryTopNav activeKey="home" />
 
       <div className="cd-home-body">
         <div className="hd-hero">
