@@ -202,6 +202,106 @@
   transform: scale(1.08);
 }
 
+/* ============== 家居产业首页 分组服务入口 ============== */
+.hd-home-overview {
+  padding-bottom: 20px;
+}
+
+.hd-home-service-board {
+  width: 95%;
+  margin: 24px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.hd-home-service-group {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(9, 114, 203, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(9, 114, 203, 0.08);
+  padding: 24px;
+}
+
+.hd-home-service-title {
+  margin: 0 0 18px;
+  color: var(--hd-primary-dark);
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.hd-home-service-title::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 3px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--hd-primary-dark), var(--hd-primary));
+}
+
+.hd-home-service-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.hd-home-service-group--support .hd-home-service-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.hd-home-service-card {
+  min-height: 86px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #fff 0%, #f6fbff 100%);
+  border: 1px solid var(--hd-border);
+  border-radius: var(--hd-card-radius);
+  color: var(--hd-text-soft);
+  text-decoration: none;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.hd-home-service-card:hover {
+  color: var(--hd-text);
+  border-color: var(--hd-primary);
+  box-shadow: 0 6px 18px rgba(21, 132, 218, 0.22);
+  transform: translateY(-2px);
+}
+
+.hd-home-service-card--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.hd-home-service-card__icon {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.hd-home-service-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.35;
+}
+
+.hd-home-service-card__text small {
+  color: #6b7c8f;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 /* ============== 便民服务 (5 列等宽) ============== */
 .hd-services-grid {
   list-style: none;
@@ -639,6 +739,24 @@
   margin-bottom: 0;
 }
 
+/* ============== 详情页 服务卡片 ============== */
+.hd-service-detail-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 18px;
+}
+
+.hd-service-detail-card .hd-topic-title {
+  border-radius: 16px;
+}
+
+.hd-service-detail-card .hd-topic-body {
+  border-left-color: var(--hd-primary);
+}
+
+.hd-right-content--chain .hd-stage-section {
+  border: 1px solid rgba(21, 132, 218, 0.12);
+}
+
 .hd-topic-title {
   width: 100%;
   border: 1px solid rgba(66, 122, 255, 0.15);
@@ -865,6 +983,10 @@
   .hd-services-item {
     flex: 0 0 48%;
   }
+  .hd-home-service-grid,
+  .hd-home-service-group--support .hd-home-service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -884,6 +1006,16 @@
     width: 100%;
     margin-right: 0;
     flex: 0 0 100%;
+  }
+  .hd-home-service-board {
+    width: 100%;
+  }
+  .hd-home-service-group {
+    padding: 18px;
+  }
+  .hd-home-service-grid,
+  .hd-home-service-group--support .hd-home-service-grid {
+    grid-template-columns: 1fr;
   }
   .hd-stage-title {
     width: 80%;
