@@ -1,7 +1,83 @@
 import { describe, expect, it } from 'vitest'
-import { filterTreeByTopNavSection } from '../utils/homeIndustryNavigation'
+import {
+  filterTreeByTopNavSection,
+  getVisibleHomeIndustryTopNav,
+  HOME_INDUSTRY_TOP_NAV
+} from '../utils/homeIndustryNavigation'
 
 describe('home industry navigation section filtering', () => {
+  it('includes the added investment section top navigation entries', () => {
+    expect(HOME_INDUSTRY_TOP_NAV).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'industry-intro',
+          label: '产业简介',
+          to: '/homeIndustry/value_added?section=industry-intro'
+        }),
+        expect.objectContaining({
+          key: 'investment-promo',
+          label: '招商宣传',
+          to: '/homeIndustry/value_added?section=investment-promo'
+        }),
+        expect.objectContaining({
+          key: 'enterprise-cert',
+          label: '企业办证',
+          to: '/homeIndustry/value_added?section=enterprise-cert'
+        })
+      ])
+    )
+  })
+
+  it('hides top navigation entries disabled by visibility settings', () => {
+    const visible = getVisibleHomeIndustryTopNav(JSON.stringify({
+      'investment-promo': false,
+      policy: true
+    }))
+
+    expect(visible.map((item) => item.key)).not.toContain('investment-promo')
+    expect(visible.map((item) => item.key)).toContain('industry-intro')
+    expect(visible.map((item) => item.key)).toContain('policy')
+  })
+
+  it.each([
+    ['industry-intro', '产业简介'],
+    ['investment-promo', '招商宣传'],
+    ['enterprise-cert', '企业办证流程']
+  ])('filters new investment subsection %s to only %s', (sectionKey, expectedTitle) => {
+    const tree = [
+      { id: 1, title: '产业简介', node_type: 'branch', children: [] },
+      { id: 2, title: '招商宣传', node_type: 'branch', children: [] },
+      { id: 3, title: '企业办证流程', node_type: 'branch', children: [] }
+    ]
+
+    const filtered = filterTreeByTopNavSection(tree, 'value_added', sectionKey)
+
+    expect(filtered.map((node) => node.title)).toEqual([expectedTitle])
+  })
+
+
+  it('filters new investment subsection inside the investment root only', () => {
+    const tree = [
+      {
+        id: 1,
+        title: '（一）招商入驻',
+        node_type: 'branch',
+        children: [
+          { id: 11, title: '产业简介', node_type: 'branch', children: [{ id: 111, title: '简介正文', node_type: 'leaf', children: [] }] },
+          { id: 12, title: '招商宣传', node_type: 'branch', children: [{ id: 121, title: '宣传资料', node_type: 'leaf', children: [] }] },
+          { id: 13, title: '企业办证流程', node_type: 'branch', children: [{ id: 131, title: '营业执照申领', node_type: 'leaf', children: [] }] }
+        ]
+      },
+      { id: 2, title: '（二）项目服务', node_type: 'branch', children: [{ id: 21, title: '项目立项', node_type: 'branch', children: [] }] }
+    ]
+
+    const filtered = filterTreeByTopNavSection(tree, 'value_added', 'industry-intro')
+
+    expect(filtered).toHaveLength(1)
+    expect(filtered[0].title).toBe('（一）招商入驻')
+    expect(filtered[0].children.map((node) => node.title)).toEqual(['产业简介'])
+  })
+
   it('filters industry-chain entries to the selected stage only', () => {
     const tree = [
       {

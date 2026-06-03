@@ -8,6 +8,7 @@ import '../../styles/historic.css'
 
 const STAGE_VARIANTS = ['hd-stage-section--alt1', 'hd-stage-section--alt2', 'hd-stage-section--alt3', 'hd-stage-section--alt4']
 const STAGE_EMOJIS = ['📝', '📋', '📂', '📑', '🗂️', '📄', '📌', '📎', '🗐', '📒']
+const SPECIAL_SECTION_KEYS = new Set(['industry-intro', 'investment-promo'])
 
 /**
  * Build left menu structure from tree data.
@@ -367,6 +368,99 @@ function RightContent({ tree, expanded, onToggle, moduleInfo }) {
   )
 }
 
+
+function getSpecialRoot(tree) {
+  const first = tree?.[0]
+  if (!first) return null
+  const children = first.children || []
+  if (children.length === 1) return children[0]
+  return first
+}
+
+function shouldUseParentTitleForOnlyChild(root, child) {
+  if (!root || !child || child.node_type !== 'leaf') return false
+  const content = getNodeContent(child)
+  return isBodyOnlyLeaf(child, content) || normalizeText(child.title).length > 30
+}
+
+function getSpecialSections(root) {
+  if (!root) return []
+  const children = root.children || []
+  if (children.length === 0) {
+    return [{ id: root.id, title: root.title, node: root }]
+  }
+  if (children.length === 1 && shouldUseParentTitleForOnlyChild(root, children[0])) {
+    return [{ id: children[0].id, title: root.title, node: children[0] }]
+  }
+  return children.map((child) => ({ id: child.id, title: child.title, node: child }))
+}
+
+function SpecialNodeContent({ node }) {
+  if (node.node_type === 'leaf') {
+    return (
+      <div className="hd-special-node-body">
+        <LeafContent node={node} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="hd-special-node-children">
+      {(node.children || []).map((child) => (
+        <div key={child.id} className="hd-special-subsection">
+          <h3>{child.title}</h3>
+          <SpecialNodeContent node={child} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function SpecialSectionContent({ tree, activeAnchor, onJumpAnchor }) {
+  const root = getSpecialRoot(tree)
+  const sections = getSpecialSections(root)
+  const showAnchorMenuTitle = !(sections.length === 1 && sections[0]?.title === root?.title)
+
+  if (!root) return null
+
+  return (
+    <div className="hd-special-section-layout">
+      <aside className="hd-special-anchor-menu">
+        <div className="hd-special-anchor-menu__inner">
+          {showAnchorMenuTitle && <div className="hd-special-anchor-menu__title">{root.title}</div>}
+          {sections.map((section) => {
+            const anchorKey = `special-node-${section.id}`
+            return (
+              <a
+                key={anchorKey}
+                href={`#${anchorKey}`}
+                className={`hd-special-anchor-item${activeAnchor === anchorKey ? ' is-active' : ''}`}
+                onClick={(event) => onJumpAnchor(event, anchorKey)}
+              >
+                <span className="hd-left-item-dot" />
+                <span>{section.title}</span>
+              </a>
+            )
+          })}
+        </div>
+      </aside>
+
+      <main className="hd-special-content">
+        <header className="hd-special-header">
+          <span className="hd-special-header__eyebrow">{'\u4e13\u9898\u5c55\u793a'}</span>
+          <h2>{root.title}</h2>
+        </header>
+        {sections.map((section) => (
+          <section key={section.id} id={`special-node-${section.id}`} className="hd-special-content-section">
+            <h2>{section.title}</h2>
+            <SpecialNodeContent node={section.node} />
+          </section>
+        ))}
+      </main>
+    </div>
+  )
+}
+
 export default function ModuleDetailPage() {
   const { moduleCode } = useParams()
   const location = useLocation()
@@ -385,6 +479,7 @@ export default function ModuleDetailPage() {
     [tree, moduleCode, sectionKey]
   )
   const leftMenu = useMemo(() => buildLeftMenu(visibleTree), [visibleTree])
+  const isSpecialSection = moduleCode === 'value_added' && SPECIAL_SECTION_KEYS.has(sectionKey)
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 
@@ -534,54 +629,60 @@ export default function ModuleDetailPage() {
         <h1>{moduleInfo?.title || '服务详情'}</h1>
       </div>
 
-      <div className="hd-detail-content">
-        <aside className="hd-left-menu">
-          <div className="hd-left-menu__inner">
-            {leftMenu.map((stage) => {
-              const stageCollapsed = menuCollapsed.has(stage.stageKey)
-              return (
-                <div key={stage.stageKey} className="hd-left-stage">
-                  <a
-                    href={`#${stage.stageKey}`}
-                    className={`hd-left-stage-title${stageCollapsed ? ' is-collapsed' : ''}`}
-                    onClick={(e) => { e.preventDefault(); toggleMenu(stage.stageKey); onJumpAnchor(e, stage.stageKey) }}
-                  >
-                    <span className="hd-left-arrow">{stageCollapsed ? '▸' : '▾'}</span>
-                    <span>{stage.stageTitle}</span>
-                  </a>
-                  {!stageCollapsed && stage.categories.map((category) => {
-                    const catCollapsed = menuCollapsed.has(category.categoryKey)
-                    return (
-                      <div key={category.categoryKey} className="hd-left-category">
-                        <a
-                          href={`#${category.categoryKey}`}
-                          className={`hd-left-category-title${catCollapsed ? ' is-collapsed' : ''}`}
-                          onClick={(e) => { e.preventDefault(); toggleMenu(category.categoryKey) }}
-                        >
-                          <span className="hd-left-arrow hd-left-arrow--sm">{catCollapsed ? '▸' : '▾'}</span>
-                          <span>{category.categoryTitle}</span>
-                        </a>
-                        {!catCollapsed && category.items.map((item) => (
-                          <a
-                            key={item.anchorKey}
-                            href={`#${item.anchorKey}`}
-                            className={`hd-left-item${activeAnchor === item.anchorKey ? ' is-active' : ''}`}
-                            onClick={(event) => onJumpAnchor(event, item.anchorKey)}
-                          >
-                            <span className="hd-left-item-dot" />
-                            <span>{item.title}</span>
-                          </a>
-                        ))}
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            })}
-          </div>
-        </aside>
+      <div className={isSpecialSection ? 'hd-detail-content hd-detail-content--special' : 'hd-detail-content'}>
+        {isSpecialSection ? (
+          <SpecialSectionContent tree={visibleTree} activeAnchor={activeAnchor} onJumpAnchor={onJumpAnchor} />
+        ) : (
+          <>
+            <aside className="hd-left-menu">
+              <div className="hd-left-menu__inner">
+                {leftMenu.map((stage) => {
+                  const stageCollapsed = menuCollapsed.has(stage.stageKey)
+                  return (
+                    <div key={stage.stageKey} className="hd-left-stage">
+                      <a
+                        href={`#${stage.stageKey}`}
+                        className={`hd-left-stage-title${stageCollapsed ? ' is-collapsed' : ''}`}
+                        onClick={(e) => { e.preventDefault(); toggleMenu(stage.stageKey); onJumpAnchor(e, stage.stageKey) }}
+                      >
+                        <span className="hd-left-arrow">{stageCollapsed ? '\u25b8' : '\u25be'}</span>
+                        <span>{stage.stageTitle}</span>
+                      </a>
+                      {!stageCollapsed && stage.categories.map((category) => {
+                        const catCollapsed = menuCollapsed.has(category.categoryKey)
+                        return (
+                          <div key={category.categoryKey} className="hd-left-category">
+                            <a
+                              href={`#${category.categoryKey}`}
+                              className={`hd-left-category-title${catCollapsed ? ' is-collapsed' : ''}`}
+                              onClick={(e) => { toggleMenu(category.categoryKey); onJumpAnchor(e, category.categoryKey) }}
+                            >
+                              <span className="hd-left-arrow hd-left-arrow--sm">{catCollapsed ? '\u25b8' : '\u25be'}</span>
+                              <span>{category.categoryTitle}</span>
+                            </a>
+                            {!catCollapsed && category.items.map((item) => (
+                              <a
+                                key={item.anchorKey}
+                                href={`#${item.anchorKey}`}
+                                className={`hd-left-item${activeAnchor === item.anchorKey ? ' is-active' : ''}`}
+                                onClick={(event) => onJumpAnchor(event, item.anchorKey)}
+                              >
+                                <span className="hd-left-item-dot" />
+                                <span>{item.title}</span>
+                              </a>
+                            ))}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })}
+              </div>
+            </aside>
 
-        <RightContent tree={visibleTree} expanded={expanded} onToggle={toggle} moduleInfo={moduleInfo} />
+            <RightContent tree={visibleTree} expanded={expanded} onToggle={toggle} moduleInfo={moduleInfo} />
+          </>
+        )}
       </div>
 
       <footer className="hd-footer">

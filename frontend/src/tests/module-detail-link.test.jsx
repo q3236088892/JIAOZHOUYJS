@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import ModuleDetailPage from '../pages/home-industry/ModuleDetailPage'
 
 vi.mock('../api/homeIndustry', () => ({
+  getCdPublicSettings: () => Promise.resolve({ data: { code: 200, data: {} } }),
   getCdModules: () => Promise.resolve({ data: { code: 200, data: [] } }),
   getCdModuleTree: () =>
     Promise.resolve({

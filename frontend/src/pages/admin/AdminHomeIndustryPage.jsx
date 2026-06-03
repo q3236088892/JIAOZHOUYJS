@@ -1,13 +1,18 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Input, Modal, Select, Space, Tree, message, Tag, Popconfirm, Dropdown, Upload } from 'antd'
-import { PlusOutlined, DeleteOutlined, ImportOutlined, FolderOutlined, FileTextOutlined, DownOutlined, PictureOutlined, UploadOutlined } from '@ant-design/icons'
+import { Button, Input, Modal, Select, Space, Switch, Tree, message, Tag, Popconfirm, Dropdown, Upload } from 'antd'
+import { PlusOutlined, DeleteOutlined, ImportOutlined, FolderOutlined, FileTextOutlined, DownOutlined, PictureOutlined, UploadOutlined, SettingOutlined } from '@ant-design/icons'
 import {
   getAdminCdModules, createAdminCdModule, updateAdminCdModule, uploadCdImage,
   getAdminCdTree, createAdminCdNode, updateAdminCdNode, deleteAdminCdNode,
   getAdminCdSettings, updateAdminCdSetting
 } from '../../api/homeIndustry'
 import { toAntdTreeData, findNodeInTree, collectExpandedKeys } from '../../utils/homeIndustryTree'
+import {
+  HOME_INDUSTRY_NAV_VISIBILITY_SETTING_KEY,
+  HOME_INDUSTRY_TOP_NAV,
+  parseHomeIndustryNavVisibility
+} from '../../utils/homeIndustryNavigation'
 import ContentEditor from './ContentEditor'
 import ExcelImportModal from './ExcelImportModal'
 import '../../styles/admin.css'
@@ -31,6 +36,8 @@ export default function AdminHomeIndustryPage() {
   const [moduleSettings, setModuleSettings] = useState({ home_banner_url: '', detail_banner_url: '' })
   const [savingSettings, setSavingSettings] = useState(false)
   const [siteSettings, setSiteSettings] = useState({ home_banner: '' })
+  const [showNavSettings, setShowNavSettings] = useState(false)
+  const [navVisibility, setNavVisibility] = useState({})
 
   const loadModules = useCallback(async () => {
     try {
@@ -65,7 +72,12 @@ export default function AdminHomeIndustryPage() {
 
   useEffect(() => {
     getAdminCdSettings()
-      .then((res) => { if (res.data.code === 200) setSiteSettings({ home_banner: res.data.data.home_banner || '' }) })
+      .then((res) => {
+        if (res.data.code === 200) {
+          setSiteSettings({ home_banner: res.data.data.home_banner || '' })
+          setNavVisibility(parseHomeIndustryNavVisibility(res.data.data[HOME_INDUSTRY_NAV_VISIBILITY_SETTING_KEY]))
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -161,6 +173,17 @@ export default function AdminHomeIndustryPage() {
     }
   }
 
+  const handleNavVisibilityChange = async (key, checked) => {
+    const next = { ...navVisibility, [key]: checked }
+    setNavVisibility(next)
+    try {
+      await updateAdminCdSetting(HOME_INDUSTRY_NAV_VISIBILITY_SETTING_KEY, JSON.stringify(next))
+      message.success('导航菜单设置已保存')
+    } catch {
+      message.error('导航菜单设置保存失败')
+    }
+  }
+
   const handleImportSuccess = () => {
     setShowImport(false)
     loadTree()
@@ -233,7 +256,33 @@ export default function AdminHomeIndustryPage() {
           >
             {'Banner设置'}
           </Button>
+          <Button
+            icon={<SettingOutlined />}
+            onClick={() => setShowNavSettings(!showNavSettings)}
+            type={showNavSettings ? 'primary' : 'default'}
+          >
+            {'导航菜单设置'}
+          </Button>
         </Space>
+
+        {showNavSettings && (
+          <div style={{ marginBottom: 16, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontWeight: 600, fontSize: 14, color: '#1e2a3e', marginBottom: 12 }}>前台顶部导航菜单显示控制</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
+              {HOME_INDUSTRY_TOP_NAV.map((item) => (
+                <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid #eef1f5', borderRadius: 6 }}>
+                  <span>{item.label}</span>
+                  <Switch
+                    size="small"
+                    aria-label={`显示${item.label}`}
+                    checked={navVisibility[item.key] !== false}
+                    onChange={(checked) => handleNavVisibilityChange(item.key, checked)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {showModuleSettings && (
           <div style={{ marginBottom: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>

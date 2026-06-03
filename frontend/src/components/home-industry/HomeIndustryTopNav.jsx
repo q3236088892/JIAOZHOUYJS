@@ -6,12 +6,20 @@ import {
   FileProtectOutlined,
   GlobalOutlined,
   HomeOutlined,
+  InfoCircleOutlined,
+  NotificationOutlined,
   ProjectOutlined,
   ReadOutlined,
+  SolutionOutlined,
   TeamOutlined
 } from '@ant-design/icons'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { HOME_INDUSTRY_TOP_NAV } from '../../utils/homeIndustryNavigation'
+import { getCdPublicSettings } from '../../api/homeIndustry'
+import {
+  getVisibleHomeIndustryTopNav,
+  HOME_INDUSTRY_NAV_VISIBILITY_SETTING_KEY
+} from '../../utils/homeIndustryNavigation'
 
 const navIconMap = {
   home: HomeOutlined,
@@ -23,14 +31,33 @@ const navIconMap = {
   finance: DollarCircleOutlined,
   assistance: CustomerServiceOutlined,
   trade: GlobalOutlined,
-  chain: ApartmentOutlined
+  chain: ApartmentOutlined,
+  info: InfoCircleOutlined,
+  promo: NotificationOutlined,
+  cert: SolutionOutlined
 }
 
 export default function HomeIndustryTopNav({ activeKey, moduleCode, sectionKey }) {
+  const [navVisibility, setNavVisibility] = useState({})
+
+  useEffect(() => {
+    let cancelled = false
+    getCdPublicSettings()
+      .then((res) => {
+        if (!cancelled && res.data.code === 200) {
+          setNavVisibility(res.data.data?.[HOME_INDUSTRY_NAV_VISIBILITY_SETTING_KEY] || {})
+        }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  const navItems = getVisibleHomeIndustryTopNav(navVisibility)
+
   return (
     <header className="hd-top-nav">
       <ul>
-        {HOME_INDUSTRY_TOP_NAV.map((item) => {
+        {navItems.map((item) => {
           const Icon = navIconMap[item.icon] || HomeOutlined
           const active = activeKey
             ? item.key === activeKey

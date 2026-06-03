@@ -6,6 +6,7 @@ import ModuleDetailPage from '../pages/home-industry/ModuleDetailPage'
 const duplicateBody = '胶州市家居产业历史悠久，形成了龙头引领、链群互动的发展生态。'
 
 vi.mock('../api/homeIndustry', () => ({
+  getCdPublicSettings: () => Promise.resolve({ data: { code: 200, data: {} } }),
   getCdModules: () => Promise.resolve({ data: { code: 200, data: [] } }),
   getCdModuleTree: () =>
     Promise.resolve({

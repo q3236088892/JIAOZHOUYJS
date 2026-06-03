@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import ModuleDetailPage from '../pages/home-industry/ModuleDetailPage'
 
 vi.mock('../api/homeIndustry', () => ({
+  getCdPublicSettings: () => Promise.resolve({ data: { code: 200, data: {} } }),
   getCdModules: () => Promise.resolve({ data: { code: 200, data: [{ id: 1, code: 'value_added', title: '增值服务' }] } }),
   getCdModuleTree: () =>
     Promise.resolve({
@@ -102,6 +103,10 @@ describe('ModuleDetailPage service cards', () => {
         disconnect() {}
       }
     )
+    vi.stubGlobal('requestAnimationFrame', (callback) => {
+      callback()
+      return 1
+    })
   })
 
   afterEach(() => {
@@ -146,5 +151,30 @@ describe('ModuleDetailPage service cards', () => {
     expect(leftMenu).toHaveTextContent('项目立项')
     expect(leftMenu).toHaveTextContent('施工许可')
     expect(leftMenu).not.toHaveTextContent('政策服务')
+    expect([...container.querySelectorAll('.hd-left-arrow')].map((el) => el.textContent)).not.toContain('?')
+  })
+
+  it('scrolls to the category section when a left category title is clicked', async () => {
+    const scrollIntoView = vi.fn()
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoView
+
+    const { container } = render(
+      <MemoryRouter initialEntries={['/homeIndustry/value_added?section=project']}>
+        <Routes>
+          <Route path="/homeIndustry/:moduleCode" element={<ModuleDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByText('企业投资项目核准/备案')
+
+    const constructionCategory = container.querySelector('.hd-left-category-title[href="#cat-8"]')
+    expect(constructionCategory).not.toBeNull()
+
+    fireEvent.click(constructionCategory)
+
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
+    })
   })
 })

@@ -176,6 +176,10 @@ node = {
 处理：
 
 - 新增 `frontend/src/utils/homeIndustryNavigation.js`：集中维护顶部固定导航项、跳转地址和 `section` 分组筛选规则。
+- 顶部导航新增“产业简介、招商宣传、企业办证”三个固定入口，均跳转到 `value_added` 模块下对应 `section`：`industry-intro`、`investment-promo`、`enterprise-cert`；这三个入口匹配“招商入驻”顶层分组下的二级节点，避免点击后回退显示整棵树。
+- `ModuleDetailPage.jsx` 对 `value_added?section=industry-intro` 和 `value_added?section=investment-promo` 启用特殊专题模板：左侧为当前专题内部锚点导航，右侧为专题内容分段展示；锚点由对应节点下的子节点自动生成，后台仍通过现有内容树和区块内容编辑器维护，不改数据库和接口。
+- 特殊专题模板的左侧锚点设置方式：在后台内容树中给“产业简介”或“招商宣传”添加子节点，子节点标题即锚点名称；如果只有一个叶子节点且标题是导入正文长文本，前台会自动使用父级标题作为锚点名称，避免左侧显示整段正文。
+- 后台 `frontend/src/pages/admin/AdminHomeIndustryPage.jsx` 增加“导航菜单设置”，通过 `cd_setting.home_industry_nav_visibility` 保存各固定导航项显示/隐藏状态；前台 `HomeIndustryTopNav.jsx` 读取 public settings 后过滤隐藏项。未配置时默认全部显示。
 - 顶部导航中的“招商入驻、项目服务、政策服务、法律服务、人才服务、金融服务、帮办服务、国际贸易服务、‘一件事’延链拓面”均对应 `value_added` 模块下的顶层分组，通过 `?section=` 精确过滤；不要误连到 `enterprise_support`，该模块仍用于首页“利企配套服务”服务卡片。
 - 顶部导航使用 `HomeIndustryTopNav.jsx` 共享组件，视觉为蓝色导航条内“线性小图标 + 文字”的入口样式，不使用白色边框按钮。
 - 首页“家居产业链服务”卡片分别跳转 `industry_chain?section=upstream|midstream|downstream`，只展示上游/中游/下游对应树分组；首页“利企配套服务”卡片分别跳转 `enterprise_support?section=tax|human-resource|construction|agency`，只展示财税/人力资源/项目施工/中介对应树分组。
