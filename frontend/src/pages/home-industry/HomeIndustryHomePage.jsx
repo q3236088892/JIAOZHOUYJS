@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getCdModules, getCdPublicSettings } from '../../api/homeIndustry'
 import HomeIndustryTopNav from '../../components/home-industry/HomeIndustryTopNav'
+import { HOME_INDUSTRY_TITLE } from '../../constants/homeIndustry'
 import '../../styles/historic.css'
 
 const ICON_BASE = '/historic/icons'
@@ -23,7 +24,7 @@ const fallbackIcons = [
   `${ICON_BASE}/organize_performance.png`
 ]
 
-const HOME_TITLE = '胶州市家居产业服务“一类事”'
+const HOME_TITLE = HOME_INDUSTRY_TITLE
 
 const serviceGroups = [
   {
@@ -139,25 +140,36 @@ function HomeServiceGroup({ group, modules }) {
 export default function HomeIndustryHomePage() {
   const [modules, setModules] = useState([])
   const [homeBanner, setHomeBanner] = useState('')
+  const [homeBannerResolved, setHomeBannerResolved] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+
     getCdModules()
       .then((res) => {
-        if (res.data.code === 200) setModules(res.data.data)
+        if (!cancelled && res.data.code === 200) setModules(res.data.data)
       })
       .catch(() => {})
     getCdPublicSettings()
-      .then((res) => { if (res.data.code === 200) setHomeBanner(res.data.data.home_banner || '') })
+      .then((res) => {
+        if (!cancelled && res.data.code === 200) setHomeBanner(res.data.data.home_banner || '')
+      })
       .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setHomeBannerResolved(true)
+      })
+
+    return () => { cancelled = true }
   }, [])
 
   const homeBannerUrl = homeBanner
-  const pageStyle = homeBannerUrl
+  const pageStyle = homeBannerResolved && homeBannerUrl
     ? { backgroundImage: `url(${homeBannerUrl})`, backgroundRepeat: 'no-repeat', backgroundPosition: 'top center', backgroundSize: '100% 48vh', backgroundColor: '#f7fbff' }
     : undefined
+  const pageClassName = `hd-page cd-home-wrap${homeBannerResolved ? '' : ' hd-page--banner-pending'}`
 
   return (
-    <div className="hd-page cd-home-wrap" style={pageStyle}>
+    <div className={pageClassName} style={pageStyle}>
       <HomeIndustryTopNav activeKey="home" />
 
       <div className="cd-home-body">

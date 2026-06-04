@@ -3,12 +3,122 @@ import { useParams, Link, useLocation } from 'react-router-dom'
 import { Spin } from 'antd'
 import { getCdModuleTree } from '../../api/homeIndustry'
 import HomeIndustryTopNav from '../../components/home-industry/HomeIndustryTopNav'
+import { HOME_INDUSTRY_TITLE } from '../../constants/homeIndustry'
 import { filterTreeByTopNavSection } from '../../utils/homeIndustryNavigation'
 import '../../styles/historic.css'
 
 const STAGE_VARIANTS = ['hd-stage-section--alt1', 'hd-stage-section--alt2', 'hd-stage-section--alt3', 'hd-stage-section--alt4']
 const STAGE_EMOJIS = ['📝', '📋', '📂', '📑', '🗂️', '📄', '📌', '📎', '🗐', '📒']
 const SPECIAL_SECTION_KEYS = new Set(['industry-intro', 'investment-promo'])
+
+const INDUSTRY_INTRO_ASSET_BASE = '/home-industry/industry-intro'
+const INDUSTRY_INTRO_STATIC_SECTIONS = [
+  {
+    id: 'overview',
+    title: '\u4ea7\u4e1a\u7b80\u4ecb',
+    images: [
+      { src: `${INDUSTRY_INTRO_ASSET_BASE}/industry-intro-01.webp`, alt: '\u4ea7\u4e1a\u7b80\u4ecb\u5c55\u677f1' },
+      { src: `${INDUSTRY_INTRO_ASSET_BASE}/industry-intro-02.webp`, alt: '\u4ea7\u4e1a\u7b80\u4ecb\u5c55\u677f2' }
+    ]
+  },
+  {
+    id: 'shanghe-smart-home',
+    title: '\u4e0a\u5408\u667a\u80fd\u5bb6\u5c45\u4ea7\u4e1a',
+    images: [
+      { src: `${INDUSTRY_INTRO_ASSET_BASE}/shanghe-smart-home.webp`, alt: '\u4e0a\u5408\u667a\u80fd\u5bb6\u5c45\u4ea7\u4e1a\u60c5\u51b5\u4ecb\u7ecd' }
+    ]
+  },
+  {
+    id: 'yuanshi-muyu-home',
+    title: '\u6e90\u6c0f\u6728\u8bed\u5bb6\u5177\u4ea7\u4e1a',
+    images: [
+      { src: `${INDUSTRY_INTRO_ASSET_BASE}/yuanshi-muyu-home.webp`, alt: '\u6e90\u6c0f\u6728\u8bed\u5bb6\u5177\u4ea7\u4e1a\u60c5\u51b5\u4ecb\u7ecd' }
+    ]
+  }
+]
+
+const INVESTMENT_PROMO_ASSET_BASE = '/home-industry/investment-promo'
+const INVESTMENT_PROMO_STATIC_SECTIONS = [
+  {
+    id: 'video',
+    type: 'video',
+    title: '\u5ba3\u4f20\u89c6\u9891',
+    src: `${INVESTMENT_PROMO_ASSET_BASE}/promo-video.mp4`
+  },
+  {
+    id: 'supply-chain',
+    type: 'image',
+    title: '\u5b8c\u5584\u4f9b\u5e94\u94fe',
+    images: [
+      { src: `${INVESTMENT_PROMO_ASSET_BASE}/supply-chain.webp`, alt: '\u5b8c\u5584\u4f9b\u5e94\u94fe\u5c55\u677f' }
+    ]
+  },
+  {
+    id: 'strong-chain',
+    type: 'image',
+    title: '\u505a\u5f3a\u4ea7\u4e1a\u94fe',
+    images: [
+      { src: `${INVESTMENT_PROMO_ASSET_BASE}/strong-chain.webp`, alt: '\u505a\u5f3a\u4ea7\u4e1a\u94fe\u5c55\u677f' }
+    ]
+  }
+]
+
+const FIELD_BRANCH_TITLES = new Set([
+  '服务类型',
+  '服务内容',
+  '服务地点/窗口',
+  '服务地点窗口',
+  '提供部门',
+  '办公时间',
+  '咨询时间',
+  '咨询电话',
+  '线上申报',
+  '我要咨询',
+  '我要申报',
+  '我要办理'
+])
+
+const ACTION_FIELD_TITLES = new Set(['线上申报', '我要咨询', '我要申报', '我要办理'])
+const WIDE_FIELD_TITLES = new Set(['服务内容', '服务地点/窗口', '服务地点窗口'])
+const FIELD_BRANCH_SERVICE_CATEGORY_TITLES = new Set([
+  '税务政策咨询、常见税务风险防范培训',
+  '工业技术改造等政策咨询',
+  '企业经营合规指导',
+  '跨境电商法律法规解读',
+  '家居类职业经理人、仓储运维等高端人才引进服务',
+  '电商直播、售后、行政等青年人才引进服务',
+  '家居行业线上消费节点（双11、618等）临时用工需求服务',
+  '人才安置、子女入学、医疗卫生等保障性服务',
+  '推动校企合作定向委培家居行业技能人才',
+  '上市辅导、普惠金融政策咨询服务',
+  '供应链金融服务（订单贷、仓单质押、智享家居贷等特色化产业投融资业务）',
+  '重大项目“金牌团队”服务',
+  '营商企服“金牌团队”服务',
+  '线上销售综合服务基地选品服务',
+  '跨境贸易综合服务',
+  '中欧班列提供特色化进出口货运服务',
+  '跨境信用互认'
+].map(normalizeFieldTitle))
+
+function normalizeFieldTitle(value) {
+  return String(value || '').replace(/\s+/g, '').replace(/[：:]+$/, '')
+}
+
+function isFieldBranchNode(node) {
+  return node?.node_type === 'branch' && FIELD_BRANCH_TITLES.has(normalizeFieldTitle(node.title))
+}
+
+function isFieldBranchServiceCategory(category) {
+  return category?.node_type === 'branch' && FIELD_BRANCH_SERVICE_CATEGORY_TITLES.has(normalizeFieldTitle(category.title))
+}
+
+function getFieldBranchNodes(category) {
+  if (!isFieldBranchServiceCategory(category)) return []
+  const branchChildren = (category.children || []).filter((child) => child.node_type === 'branch')
+  if (branchChildren.length < 3) return []
+  if (!branchChildren.every(isFieldBranchNode)) return []
+  return branchChildren
+}
 
 /**
  * Build left menu structure from tree data.
@@ -22,11 +132,13 @@ function buildLeftMenu(tree) {
     categories: (level1.children || []).filter(n => n.node_type === 'branch').map((level2) => ({
       categoryKey: `cat-${level2.id}`,
       categoryTitle: level2.title,
-      items: (level2.children || []).filter(n => n.node_type === 'branch').map((child) => ({
-        anchorKey: `node-${child.id}`,
-        title: child.title,
-        nodeId: child.id
-      }))
+      items: getFieldBranchNodes(level2).length > 0
+        ? []
+        : (level2.children || []).filter(n => n.node_type === 'branch').map((child) => ({
+          anchorKey: `node-${child.id}`,
+          title: child.title,
+          nodeId: child.id
+        }))
     }))
   }))
 }
@@ -80,6 +192,87 @@ function isBodyOnlyLeaf(node, content) {
     !content.link_url &&
     (!content.fields || content.fields.length === 0) &&
     normalizeText(node.title) === normalizeText(content.body)
+  )
+}
+
+function collectLeafNodes(node) {
+  if (!node) return []
+  if (node.node_type === 'leaf') return [node]
+  return (node.children || []).flatMap((child) => collectLeafNodes(child))
+}
+
+function getFieldBranchItem(fieldNode) {
+  const label = fieldNode.title
+  const leaves = collectLeafNodes(fieldNode)
+  const values = []
+  let linkUrl = ''
+  let linkLabel = ''
+  let linkTarget = '_blank'
+
+  for (const leaf of leaves) {
+    const content = getNodeContent(leaf)
+    if (content.link_url && !linkUrl) {
+      linkUrl = content.link_url
+      linkLabel = content.link_label || leaf.title || label
+      linkTarget = content.link_target || '_blank'
+    }
+    const value = content.body || content.summary || content.link_label || leaf.title
+    if (value) values.push(String(value))
+  }
+
+  return {
+    key: `field-${fieldNode.id}`,
+    label,
+    normalizedLabel: normalizeFieldTitle(label),
+    value: values.join('\n'),
+    linkUrl,
+    linkLabel,
+    linkTarget
+  }
+}
+
+function FieldBranchServiceCard({ category }) {
+  const items = getFieldBranchNodes(category).map(getFieldBranchItem)
+  const infoItems = items.filter((item) => !ACTION_FIELD_TITLES.has(item.normalizedLabel))
+  const actionItems = items.filter((item) => ACTION_FIELD_TITLES.has(item.normalizedLabel))
+
+  return (
+    <article className="hd-topic-card hd-service-detail-card hd-field-service-card">
+      <div className="hd-field-service-grid">
+        {infoItems.map((item) => (
+          <div
+            key={item.key}
+            className={`hd-field-service-item${WIDE_FIELD_TITLES.has(item.normalizedLabel) ? ' hd-field-service-item--wide' : ''}`}
+          >
+            <div className="hd-field-service-label">{item.label}</div>
+            <div className="hd-field-service-value">{item.value}</div>
+          </div>
+        ))}
+      </div>
+      {actionItems.length > 0 && (
+        <div className="hd-field-service-actions">
+          {actionItems.map((item) => (
+            item.linkUrl ? (
+              <a
+                key={item.key}
+                href={item.linkUrl}
+                target={item.linkTarget}
+                rel="noopener noreferrer"
+                className="hd-field-service-action"
+              >
+                {item.linkLabel || item.label}
+                <span aria-hidden="true">→</span>
+              </a>
+            ) : (
+              <span key={item.key} className="hd-field-service-action hd-field-service-action--static">
+                {item.label}
+                <span aria-hidden="true">→</span>
+              </span>
+            )
+          ))}
+        </div>
+      )}
+    </article>
   )
 }
 
@@ -351,15 +544,19 @@ function RightContent({ tree, expanded, onToggle, moduleInfo }) {
             <div key={level2.id} className="hd-category-block" id={`cat-${level2.id}`}>
               <h3>{level2.title}</h3>
 
-              {(level2.children || []).map((child, idx) => (
-                <TopicCard
-                  key={child.id}
-                  node={child}
-                  emoji={STAGE_EMOJIS[idx % STAGE_EMOJIS.length]}
-                  expanded={expanded}
-                  onToggle={onToggle}
-                />
-              ))}
+              {getFieldBranchNodes(level2).length > 0 ? (
+                <FieldBranchServiceCard category={level2} />
+              ) : (
+                (level2.children || []).map((child, idx) => (
+                  <TopicCard
+                    key={child.id}
+                    node={child}
+                    emoji={STAGE_EMOJIS[idx % STAGE_EMOJIS.length]}
+                    expanded={expanded}
+                    onToggle={onToggle}
+                  />
+                ))
+              )}
             </div>
           ))}
         </section>
@@ -416,7 +613,152 @@ function SpecialNodeContent({ node }) {
   )
 }
 
-function SpecialSectionContent({ tree, activeAnchor, onJumpAnchor }) {
+
+function IndustryIntroSpecialContent({ activeAnchor, onJumpAnchor }) {
+  return (
+    <div className="hd-special-section-layout hd-special-section-layout--industry-intro">
+      <aside className="hd-special-anchor-menu">
+        <div className="hd-special-anchor-menu__inner">
+          <div className="hd-special-anchor-cover">
+            <img
+              src={`${INDUSTRY_INTRO_ASSET_BASE}/industry-intro-cover.webp`}
+              alt="\u4ea7\u4e1a\u7b80\u4ecb"
+              loading="lazy"
+            />
+            <div className="hd-special-anchor-cover__overlay">
+              <span>{'\u4ea7\u4e1a\u7b80\u4ecb'}</span>
+            </div>
+          </div>
+          {INDUSTRY_INTRO_STATIC_SECTIONS.map((section, index) => {
+            const anchorKey = `industry-intro-${section.id}`
+            const isActive = activeAnchor === anchorKey || (!activeAnchor && index === 0)
+            return (
+              <a
+                key={anchorKey}
+                href={`#${anchorKey}`}
+                className={`hd-special-anchor-item${isActive ? ' is-active' : ''}`}
+                onClick={(event) => onJumpAnchor(event, anchorKey)}
+              >
+                <span className="hd-left-item-dot" />
+                <span>{section.title}</span>
+              </a>
+            )
+          })}
+        </div>
+      </aside>
+
+      <main className="hd-special-content hd-special-content--poster">
+        <header className="hd-special-header">
+          <span className="hd-special-header__eyebrow">{'\u4e13\u9898\u5c55\u793a'}</span>
+          <h2>{'\u4ea7\u4e1a\u7b80\u4ecb'}</h2>
+        </header>
+        {INDUSTRY_INTRO_STATIC_SECTIONS.map((section) => (
+          <section
+            key={section.id}
+            id={`industry-intro-${section.id}`}
+            className="hd-special-content-section hd-special-poster-section"
+          >
+            <h2>{section.title}</h2>
+            <div className="hd-special-poster-list">
+              {section.images.map((image) => (
+                <img
+                  key={image.src}
+                  className="hd-special-poster-image"
+                  src={image.src}
+                  alt={image.alt}
+                  loading="lazy"
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </main>
+    </div>
+  )
+}
+
+function InvestmentPromoSpecialContent({ activeAnchor, onJumpAnchor }) {
+  return (
+    <div className="hd-special-section-layout hd-special-section-layout--industry-intro hd-special-section-layout--investment-promo">
+      <aside className="hd-special-anchor-menu">
+        <div className="hd-special-anchor-menu__inner">
+          <div className="hd-special-anchor-cover hd-special-anchor-cover--promo">
+            <div className="hd-special-anchor-cover__overlay">
+              <span>{'\u62db\u5546\u5ba3\u4f20'}</span>
+            </div>
+          </div>
+          {INVESTMENT_PROMO_STATIC_SECTIONS.map((section, index) => {
+            const anchorKey = `investment-promo-${section.id}`
+            const isActive = activeAnchor === anchorKey || (!activeAnchor && index === 0)
+            return (
+              <a
+                key={anchorKey}
+                href={`#${anchorKey}`}
+                className={`hd-special-anchor-item${isActive ? ' is-active' : ''}`}
+                onClick={(event) => onJumpAnchor(event, anchorKey)}
+              >
+                <span className="hd-left-item-dot" />
+                <span>{section.title}</span>
+              </a>
+            )
+          })}
+        </div>
+      </aside>
+
+      <main className="hd-special-content hd-special-content--poster hd-special-content--investment-promo">
+        <header className="hd-special-header">
+          <span className="hd-special-header__eyebrow">{'\u4e13\u9898\u5c55\u793a'}</span>
+          <h2>{'\u62db\u5546\u5ba3\u4f20'}</h2>
+        </header>
+        {INVESTMENT_PROMO_STATIC_SECTIONS.map((section) => (
+          <section
+            key={section.id}
+            id={`investment-promo-${section.id}`}
+            className={`hd-special-content-section hd-special-poster-section${section.type === 'video' ? ' hd-special-video-section' : ''}`}
+          >
+            <h2>{section.title}</h2>
+            {section.type === 'video' ? (
+              <div className="hd-special-promo-video-wrap">
+                <video
+                  className="hd-special-promo-video"
+                  src={section.src}
+                  autoPlay
+                  controls
+                  muted
+                  playsInline
+                  preload="metadata"
+                >
+                  {'\u60a8\u7684\u6d4f\u89c8\u5668\u4e0d\u652f\u6301\u89c6\u9891\u64ad\u653e'}
+                </video>
+              </div>
+            ) : (
+              <div className="hd-special-poster-list">
+                {section.images.map((image) => (
+                  <img
+                    key={image.src}
+                    className="hd-special-poster-image"
+                    src={image.src}
+                    alt={image.alt}
+                    loading="lazy"
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        ))}
+      </main>
+    </div>
+  )
+}
+
+function SpecialSectionContent({ tree, activeAnchor, onJumpAnchor, sectionKey }) {
+  if (sectionKey === 'industry-intro') {
+    return <IndustryIntroSpecialContent activeAnchor={activeAnchor} onJumpAnchor={onJumpAnchor} />
+  }
+  if (sectionKey === 'investment-promo') {
+    return <InvestmentPromoSpecialContent activeAnchor={activeAnchor} onJumpAnchor={onJumpAnchor} />
+  }
+
   const root = getSpecialRoot(tree)
   const sections = getSpecialSections(root)
   const showAnchorMenuTitle = !(sections.length === 1 && sections[0]?.title === root?.title)
@@ -610,7 +952,7 @@ export default function ModuleDetailPage() {
 
   if (loading) {
     return (
-      <div className="hd-detail-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+      <div className="hd-detail-page hd-detail-page--banner-pending" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
         <Spin size="large" />
       </div>
     )
@@ -626,12 +968,12 @@ export default function ModuleDetailPage() {
       <HomeIndustryTopNav moduleCode={moduleCode} sectionKey={sectionKey} />
 
       <div className="hd-detail-hero">
-        <h1>{moduleInfo?.title || '服务详情'}</h1>
+        <h1>{HOME_INDUSTRY_TITLE}</h1>
       </div>
 
       <div className={isSpecialSection ? 'hd-detail-content hd-detail-content--special' : 'hd-detail-content'}>
         {isSpecialSection ? (
-          <SpecialSectionContent tree={visibleTree} activeAnchor={activeAnchor} onJumpAnchor={onJumpAnchor} />
+          <SpecialSectionContent tree={visibleTree} activeAnchor={activeAnchor} onJumpAnchor={onJumpAnchor} sectionKey={sectionKey} />
         ) : (
           <>
             <aside className="hd-left-menu">
@@ -688,7 +1030,7 @@ export default function ModuleDetailPage() {
       <footer className="hd-footer">
         <div className="hd-footer__divider1" />
         <div className="hd-footer__divider2" />
-        <div className="hd-footer__body">胶州市家居产业服务“一类事”</div>
+        <div className="hd-footer__body">{HOME_INDUSTRY_TITLE}</div>
       </footer>
 
       <button

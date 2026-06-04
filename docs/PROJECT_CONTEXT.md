@@ -169,6 +169,69 @@ node = {
 
 ## 最近重要改动记录
 
+### 2026-06-04：字段拆分型服务分类改为平铺信息卡展示
+
+需求：增值服务中部分分类把“服务内容、服务地点/窗口、提供部门、办公时间、咨询电话、我要咨询/我要申报”等字段拆成多个可展开折叠条，视觉上类似一排排白色折叠卡；需要改成参考图的一张信息卡平铺展示方式。
+
+处理：
+
+- `ModuleDetailPage.jsx` 增加字段拆分型分类识别：只精确匹配当前排查出的 17 个服务分类标题；同时要求其直接子节点全部是字段类 branch，且数量不少于 3 个，避免误把其它正常业务层级改成平铺卡片。
+- 命中后使用 `FieldBranchServiceCard` 渲染为单张信息卡：普通字段按两列/整行展示，“我要咨询/我要申报/线上申报”等动作字段渲染为按钮；不再把每个字段渲染成可展开折叠条。
+- `buildLeftMenu` 同步跳过字段类子节点，避免左侧导航继续显示“服务内容、提供部门、咨询电话”等字段名。
+- 仅影响精确匹配字段拆分型的服务分类；其它正常业务层级 branch 仍保持原折叠展示。
+- `historic.css` 增加 `.hd-field-service-*` 样式，移动端自动改为单列。
+
+已排查命中的 17 个服务分类：
+
+- 政策服务：税务政策咨询、常见税务风险防范培训；工业技术改造等政策咨询。
+- 法律服务：企业经营合规指导；跨境电商法律法规解读。
+- 人才服务：家居类职业经理人、仓储运维等高端人才引进服务；电商直播、售后、行政等青年人才引进服务；家居行业线上消费节点（双11、618等）临时用工需求服务；人才安置、子女入学、医疗卫生等保障性服务；推动校企合作定向委培家居行业技能人才。
+- 金融服务：上市辅导、普惠金融政策咨询服务；供应链金融服务（订单贷、仓单质押、智享家居贷等特色化产业投融资业务）。
+- 帮办服务：重大项目“金牌团队”服务；营商企服“金牌团队”服务。
+- 国际贸易服务：线上销售综合服务基地选品服务；跨境贸易综合服务；中欧班列提供特色化进出口货运服务；跨境信用互认。
+
+相关回归测试：
+
+- `frontend/src/tests/module-detail-field-branch-card.test.jsx`
+
+### 2026-06-04：修复家居产业 Banner 异步加载闪错图并统一详情页标题
+
+问题：家居产业首页/详情页支持后台 Banner 后，页面初始渲染会先显示 CSS 默认 Banner；接口返回后台配置后再切换为后台图，导致用户看到“先闪一下别的图再变正常图”。
+
+处理：
+
+- 新增 `frontend/src/constants/homeIndustry.js`，集中维护首页和详情页共用标题 `胶州市家居产业服务“一类事”`。
+- `HomeIndustryHomePage.jsx` 增加 `homeBannerResolved` 状态，后台首页 Banner 配置未返回前添加 `.hd-page--banner-pending`，暂不显示 CSS 默认 Banner；配置返回后再显示后台图或默认图。
+- `ModuleDetailPage.jsx` 的加载态添加 `.hd-detail-page--banner-pending`，详情 Banner URL 未解析前不显示 CSS 默认 Banner；详情页顶部标题由模块名（如“增值服务”）改为统一标题。
+- `historic.css` 新增 `.hd-page--banner-pending` / `.hd-detail-page--banner-pending`，用于禁用待加载期间的默认背景图。
+
+相关回归测试：
+
+- `frontend/src/tests/home-industry-banner-pending.test.jsx`
+- `frontend/src/tests/module-detail-banner-title.test.jsx`
+
+### 2026-06-04：招商宣传专题改为视频置顶静态展板页
+
+需求：`value_added?section=investment-promo` 的“招商宣传”专题参考“产业简介”的左侧锚点 + 右侧专题展板效果，但视频需要放在最上方，下面完整展示两张招商宣传展板。
+
+处理：
+
+- `ModuleDetailPage.jsx` 新增 `InvestmentPromoSpecialContent`：当访问 `/homeIndustry/value_added?section=investment-promo` 时，不再使用后台树节点正文渲染，而是展示静态专题模板。
+- 招商宣传专题左侧锚点固定为“宣传视频、完善供应链、做强产业链”；右侧内容顺序为宣传视频播放器、完善供应链展板、做强产业链展板。
+- 新增静态素材目录 `frontend/public/home-industry/investment-promo/`：
+  - `promo-video.mp4`
+  - `supply-chain.webp`
+  - `strong-chain.webp`
+- `historic.css` 增加招商宣传视频容器和专题封面样式，复用产业简介专题的白底左侧菜单、蓝色激活态和展板卡片视觉。
+- 家居产业详情页内容区统一放大：`.hd-detail-content` 参考目标站左右布局调整为更宽的 `min(88vw, 1560px)`，专题展板图片和招商宣传视频容器改为使用右侧内容区域全宽，避免展板文字过小难以阅读。
+- 不改数据库、后台编辑器和接口；后台导入/维护的旧“招商宣传”长正文在该静态专题页中不会展示。
+
+相关回归测试：
+
+- `frontend/src/tests/module-detail-special-template.test.jsx`
+- `frontend/src/tests/module-detail-special-template-single-leaf.test.jsx`
+- `frontend/src/tests/home-industry-detail-layout-css.test.js`
+
 ### 2026-06-03：首页顶部导航改为固定业务入口并支持详情分组过滤
 
 需求：家居产业首页顶部导航参考设计稿，不再平铺后台模块；点击“招商入驻、项目服务、政策服务、法律服务、人才服务、金融服务、帮办服务、国际贸易服务、‘一件事’延链拓面”等入口时，详情页应以左侧导航栏 + 右侧卡片详情形式展示，且只展示所选业务分组内容。
@@ -177,8 +240,8 @@ node = {
 
 - 新增 `frontend/src/utils/homeIndustryNavigation.js`：集中维护顶部固定导航项、跳转地址和 `section` 分组筛选规则。
 - 顶部导航新增“产业简介、招商宣传、企业办证”三个固定入口，均跳转到 `value_added` 模块下对应 `section`：`industry-intro`、`investment-promo`、`enterprise-cert`；这三个入口匹配“招商入驻”顶层分组下的二级节点，避免点击后回退显示整棵树。
-- `ModuleDetailPage.jsx` 对 `value_added?section=industry-intro` 和 `value_added?section=investment-promo` 启用特殊专题模板：左侧为当前专题内部锚点导航，右侧为专题内容分段展示；锚点由对应节点下的子节点自动生成，后台仍通过现有内容树和区块内容编辑器维护，不改数据库和接口。
-- 特殊专题模板的左侧锚点设置方式：在后台内容树中给“产业简介”或“招商宣传”添加子节点，子节点标题即锚点名称；如果只有一个叶子节点且标题是导入正文长文本，前台会自动使用父级标题作为锚点名称，避免左侧显示整段正文。
+- `ModuleDetailPage.jsx` 对 `value_added?section=industry-intro` 和 `value_added?section=investment-promo` 启用特殊专题模板：左侧为当前专题内部锚点导航，右侧为专题内容分段展示；2026-06-04 起 `investment-promo` 已改为视频置顶静态展板页，具体规则见上方记录。
+- 特殊专题模板的左侧锚点设置方式：`industry-intro` 目前使用固定静态锚点；早期数据驱动专题会根据后台内容树子节点生成锚点，如果只有一个叶子节点且标题是导入正文长文本，前台会自动使用父级标题作为锚点名称，避免左侧显示整段正文。
 - 后台 `frontend/src/pages/admin/AdminHomeIndustryPage.jsx` 增加“导航菜单设置”，通过 `cd_setting.home_industry_nav_visibility` 保存各固定导航项显示/隐藏状态；前台 `HomeIndustryTopNav.jsx` 读取 public settings 后过滤隐藏项。未配置时默认全部显示。
 - 顶部导航中的“招商入驻、项目服务、政策服务、法律服务、人才服务、金融服务、帮办服务、国际贸易服务、‘一件事’延链拓面”均对应 `value_added` 模块下的顶层分组，通过 `?section=` 精确过滤；不要误连到 `enterprise_support`，该模块仍用于首页“利企配套服务”服务卡片。
 - 顶部导航使用 `HomeIndustryTopNav.jsx` 共享组件，视觉为蓝色导航条内“线性小图标 + 文字”的入口样式，不使用白色边框按钮。
