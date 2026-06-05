@@ -1,17 +1,7 @@
 export const HOME_INDUSTRY_TOP_NAV = [
   { key: 'home', label: '首页', to: '/homeIndustry', icon: 'home' },
-  { key: 'investment', label: '招商入驻', to: '/homeIndustry/value_added?section=investment', moduleCode: 'value_added', section: 'investment', icon: 'investment' },
   { key: 'industry-intro', label: '产业简介', to: '/homeIndustry/value_added?section=industry-intro', moduleCode: 'value_added', section: 'industry-intro', icon: 'info' },
-  { key: 'investment-promo', label: '招商宣传', to: '/homeIndustry/value_added?section=investment-promo', moduleCode: 'value_added', section: 'investment-promo', icon: 'promo' },
-  { key: 'enterprise-cert', label: '企业办证', to: '/homeIndustry/value_added?section=enterprise-cert', moduleCode: 'value_added', section: 'enterprise-cert', icon: 'cert' },
-  { key: 'project', label: '项目服务', to: '/homeIndustry/value_added?section=project', moduleCode: 'value_added', section: 'project', icon: 'project' },
-  { key: 'policy', label: '政策服务', to: '/homeIndustry/value_added?section=policy', moduleCode: 'value_added', section: 'policy', icon: 'policy' },
-  { key: 'legal', label: '法律服务', to: '/homeIndustry/value_added?section=legal', moduleCode: 'value_added', section: 'legal', icon: 'legal' },
-  { key: 'talent', label: '人才服务', to: '/homeIndustry/value_added?section=talent', moduleCode: 'value_added', section: 'talent', icon: 'talent' },
-  { key: 'finance', label: '金融服务', to: '/homeIndustry/value_added?section=finance', moduleCode: 'value_added', section: 'finance', icon: 'finance' },
-  { key: 'assistance', label: '帮办服务', to: '/homeIndustry/value_added?section=assistance', moduleCode: 'value_added', section: 'assistance', icon: 'assistance' },
-  { key: 'trade', label: '国际贸易服务', to: '/homeIndustry/value_added?section=trade', moduleCode: 'value_added', section: 'trade', icon: 'trade' },
-  { key: 'chain-extension', label: '“一件事”延链拓面', to: '/homeIndustry/value_added?section=chain-extension', moduleCode: 'value_added', section: 'chain-extension', icon: 'chain' }
+  { key: 'investment-promo', label: '招商宣传', to: '/homeIndustry/value_added?section=investment-promo', moduleCode: 'value_added', section: 'investment-promo', icon: 'promo' }
 ]
 
 export const HOME_INDUSTRY_SECTION_FILTERS = {
@@ -20,16 +10,36 @@ export const HOME_INDUSTRY_SECTION_FILTERS = {
   'investment-promo': { moduleCode: 'value_added', keywords: ['招商宣传'], parentKeywords: ['招商入驻', '招商', '入驻'] },
   'enterprise-cert': { moduleCode: 'value_added', keywords: ['企业办证', '企业办证流程'], parentKeywords: ['招商入驻', '招商', '入驻'] },
   project: { moduleCode: 'value_added', keywords: ['项目服务'] },
-  policy: { moduleCode: 'value_added', keywords: ['政策服务'] },
-  legal: { moduleCode: 'value_added', keywords: ['法律服务'] },
-  talent: { moduleCode: 'value_added', keywords: ['人才服务'] },
-  finance: { moduleCode: 'value_added', keywords: ['金融服务'] },
-  assistance: { moduleCode: 'value_added', keywords: ['帮办服务'] },
-  trade: { moduleCode: 'value_added', keywords: ['国际贸易服务'] },
+  policy: [
+    { moduleCode: 'value_added', keywords: ['政策服务'] },
+    { moduleCode: 'enterprise_support', keywords: ['政策服务'] }
+  ],
+  legal: [
+    { moduleCode: 'value_added', keywords: ['法律服务'] },
+    { moduleCode: 'enterprise_support', keywords: ['法律服务'] }
+  ],
+  talent: [
+    { moduleCode: 'value_added', keywords: ['人才服务'] },
+    { moduleCode: 'enterprise_support', keywords: ['人才服务'] }
+  ],
+  finance: [
+    { moduleCode: 'value_added', keywords: ['金融服务'] },
+    { moduleCode: 'enterprise_support', keywords: ['金融服务'] }
+  ],
+  assistance: [
+    { moduleCode: 'value_added', keywords: ['帮办服务'] },
+    { moduleCode: 'enterprise_support', keywords: ['帮办服务'] }
+  ],
+  trade: [
+    { moduleCode: 'value_added', keywords: ['国际贸易服务'] },
+    { moduleCode: 'enterprise_support', keywords: ['国际贸易服务', '国际贸易'] }
+  ],
   'chain-extension': { moduleCode: 'value_added', keywords: ['延链拓面', '一件事'] },
   upstream: { moduleCode: 'industry_chain', keywords: ['上游'] },
   midstream: { moduleCode: 'industry_chain', keywords: ['中游'] },
   downstream: { moduleCode: 'industry_chain', keywords: ['下游'] },
+  'social-resource': { moduleCode: 'enterprise_support', keywords: ['社会服务（企业）资源', '社会服务'] },
+  derivative: { moduleCode: 'enterprise_support', keywords: ['衍生服务'] },
   tax: { moduleCode: 'enterprise_support', keywords: ['财税服务'] },
   'human-resource': { moduleCode: 'enterprise_support', keywords: ['人力资源服务'] },
   construction: { moduleCode: 'enterprise_support', keywords: ['项目施工服务'] },
@@ -60,8 +70,10 @@ function includesAny(value, keywords) {
 }
 
 export function filterTreeByTopNavSection(tree, moduleCode, sectionKey) {
-  const section = HOME_INDUSTRY_SECTION_FILTERS[sectionKey]
-  if (!section || section.moduleCode !== moduleCode) return tree
+  const sectionConfig = HOME_INDUSTRY_SECTION_FILTERS[sectionKey]
+  const section = (Array.isArray(sectionConfig) ? sectionConfig : [sectionConfig])
+    .find((item) => item?.moduleCode === moduleCode)
+  if (!section) return tree
 
   const filtered = (tree || []).filter((node) => includesAny(node.title, section.keywords))
   if (filtered.length > 0) return filtered

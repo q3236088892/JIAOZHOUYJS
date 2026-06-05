@@ -42,10 +42,14 @@ const serviceGroups = [
     title: '利企配套服务',
     className: 'hd-home-service-group--support',
     entries: [
-      { key: 'tax', label: '财税服务', moduleCodes: ['enterprise_support', 'tax_service'], section: 'tax', titleKeywords: ['利企配套', '财税'] },
-      { key: 'human-resource', label: '人力资源服务', moduleCodes: ['enterprise_support', 'hr_service', 'human_resource'], section: 'human-resource', titleKeywords: ['利企配套', '人力', '人力资源'] },
-      { key: 'construction', label: '项目施工服务', moduleCodes: ['enterprise_support', 'project_service', 'construction_service'], section: 'construction', titleKeywords: ['利企配套', '项目施工', '施工'] },
-      { key: 'agency', label: '中介服务', moduleCodes: ['enterprise_support', 'agency_service'], section: 'agency', titleKeywords: ['利企配套', '中介'] }
+      { key: 'policy', label: '政策服务', moduleCodes: ['enterprise_support'], section: 'policy', titleKeywords: ['利企配套', '政策服务'] },
+      { key: 'legal', label: '法律服务', moduleCodes: ['enterprise_support'], section: 'legal', titleKeywords: ['利企配套', '法律服务'] },
+      { key: 'talent', label: '人才服务', moduleCodes: ['enterprise_support'], section: 'talent', titleKeywords: ['利企配套', '人才服务'] },
+      { key: 'finance', label: '金融服务', moduleCodes: ['enterprise_support'], section: 'finance', titleKeywords: ['利企配套', '金融服务'] },
+      { key: 'trade', label: '国际贸易服务', moduleCodes: ['enterprise_support'], section: 'trade', titleKeywords: ['利企配套', '国际贸易服务'] },
+      { key: 'social-resource', label: '社会服务（企业）资源', moduleCodes: ['enterprise_support'], section: 'social-resource', titleKeywords: ['利企配套', '社会服务', '企业资源'] },
+      { key: 'assistance', label: '帮办服务', moduleCodes: ['enterprise_support'], section: 'assistance', titleKeywords: ['利企配套', '帮办服务'] },
+      { key: 'derivative', label: '衍生服务', moduleCodes: ['enterprise_support'], section: 'derivative', titleKeywords: ['利企配套', '衍生服务'] }
     ]
   }
 ]

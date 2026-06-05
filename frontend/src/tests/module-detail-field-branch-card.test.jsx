@@ -184,7 +184,7 @@ describe('ModuleDetailPage field-branch service cards', () => {
     const serviceBlock = serviceHeading.closest('.hd-category-block')
     expect(screen.getByText('为企业提供上市辅导和普惠金融政策咨询。')).toBeInTheDocument()
     expect(screen.getByText('市民中心金融服务窗口')).toBeInTheDocument()
-    expect(screen.getByText('胶州市地方金融监管局')).toBeInTheDocument()
+    expect(screen.queryByText('胶州市地方金融监管局')).not.toBeInTheDocument()
     expect(screen.getByText('12345678')).toBeInTheDocument()
 
     expect(within(serviceBlock).queryByRole('button', { name: /服务内容/ })).not.toBeInTheDocument()

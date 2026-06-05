@@ -169,6 +169,27 @@ node = {
 
 ## 最近重要改动记录
 
+### 2026-06-05：后台内容同步到 2026.6.5 新版线上框架
+
+需求：后台原始数据来自 `胶州市家居产业服务“一类事”线上框架.xls`，现在需改为 `胶州市家居产业服务“一类事”线上框架 - 2026.6.5新版.xls`，程序整体逻辑不变，做最小化必要修改。
+
+处理：
+
+- 已按新版 xls 替换 `backend/data/events.db` 中家居产业三大模块内容：
+  - `industry_chain`：使用新版“板块二、产业链服务”，根节点为 `1.上游 原辅料采购、仓储`、`2.中游 生产制造`、`3.下游 销售出海`。
+  - `enterprise_support`：使用新版“板块三、利企配套服务”，根节点为政策服务、法律服务、人才服务、金融服务、国际贸易服务、帮办服务、社会服务（企业）资源、衍生服务。
+  - `value_added`：使用新版“首页展示”中的产业简介、招商宣传入口；产业简介/招商宣传前台仍按现有专题模板展示。
+- 首页固定服务卡片保持“家居产业链服务”和“利企配套服务”两组；利企配套服务入口改为新版 8 类：政策服务、法律服务、人才服务、金融服务、国际贸易服务、社会服务（企业）资源、帮办服务、衍生服务。
+- 顶部导航按新版“首页展示”简化为：首页、产业简介、招商宣传。
+- “社会服务（企业）资源”下的代理记账、人力资源、施工企业清单附件继续指向现有 `/uploads/*.xlsx`；中介服务保留可点击链接 `点击访问山东政务服务中介超市`。
+- 利企配套服务按用户要求不展示“提供部门”：新版导入后的 `enterprise_support` 数据已清理 `提供部门` 字段分支和普通正文中的 `提供部门：...` 段；前台字段拆分卡片也会兜底隐藏 `提供部门` 字段，避免历史数据再次显示。
+- 字段拆分型信息卡仍只对已精确匹配的 17 个服务分类拆字段；新版衍生服务等其它结构化说明保留为普通富文本卡片，避免再次出现字段折叠条。
+- 导入前数据库已备份为 `backend/data/events.db.bak-20260605-before-new-framework`。
+
+相关验证：
+
+- `frontend/src/tests/home-industry-home-layout.test.jsx`
+
 ### 2026-06-04：字段拆分型服务分类改为平铺信息卡展示
 
 需求：增值服务中部分分类把“服务内容、服务地点/窗口、提供部门、办公时间、咨询电话、我要咨询/我要申报”等字段拆成多个可展开折叠条，视觉上类似一排排白色折叠卡；需要改成参考图的一张信息卡平铺展示方式。
@@ -176,7 +197,7 @@ node = {
 处理：
 
 - `ModuleDetailPage.jsx` 增加字段拆分型分类识别：只精确匹配当前排查出的 17 个服务分类标题；同时要求其直接子节点全部是字段类 branch，且数量不少于 3 个，避免误把其它正常业务层级改成平铺卡片。
-- 命中后使用 `FieldBranchServiceCard` 渲染为单张信息卡：普通字段按两列/整行展示，“我要咨询/我要申报/线上申报”等动作字段渲染为按钮；不再把每个字段渲染成可展开折叠条。
+- 命中后使用 `FieldBranchServiceCard` 渲染为单张信息卡：普通字段按两列/整行展示，“我要咨询/我要申报/线上申报”等动作字段渲染为按钮；`提供部门` 字段按用户要求兜底隐藏；不再把每个字段渲染成可展开折叠条。
 - `buildLeftMenu` 同步跳过字段类子节点，避免左侧导航继续显示“服务内容、提供部门、咨询电话”等字段名。
 - 仅影响精确匹配字段拆分型的服务分类；其它正常业务层级 branch 仍保持原折叠展示。
 - `historic.css` 增加 `.hd-field-service-*` 样式，移动端自动改为单列。
@@ -243,9 +264,10 @@ node = {
 - `ModuleDetailPage.jsx` 对 `value_added?section=industry-intro` 和 `value_added?section=investment-promo` 启用特殊专题模板：左侧为当前专题内部锚点导航，右侧为专题内容分段展示；2026-06-04 起 `investment-promo` 已改为视频置顶静态展板页，具体规则见上方记录。
 - 特殊专题模板的左侧锚点设置方式：`industry-intro` 目前使用固定静态锚点；早期数据驱动专题会根据后台内容树子节点生成锚点，如果只有一个叶子节点且标题是导入正文长文本，前台会自动使用父级标题作为锚点名称，避免左侧显示整段正文。
 - 后台 `frontend/src/pages/admin/AdminHomeIndustryPage.jsx` 增加“导航菜单设置”，通过 `cd_setting.home_industry_nav_visibility` 保存各固定导航项显示/隐藏状态；前台 `HomeIndustryTopNav.jsx` 读取 public settings 后过滤隐藏项。未配置时默认全部显示。
-- 顶部导航中的“招商入驻、项目服务、政策服务、法律服务、人才服务、金融服务、帮办服务、国际贸易服务、‘一件事’延链拓面”均对应 `value_added` 模块下的顶层分组，通过 `?section=` 精确过滤；不要误连到 `enterprise_support`，该模块仍用于首页“利企配套服务”服务卡片。
+- 2026-06-05 新版框架起，顶部导航只保留“首页、产业简介、招商宣传”；旧版“招商入驻、项目服务、政策服务、法律服务、人才服务、金融服务、帮办服务、国际贸易服务、‘一件事’延链拓面”等入口不再作为顶部导航展示。
 - 顶部导航使用 `HomeIndustryTopNav.jsx` 共享组件，视觉为蓝色导航条内“线性小图标 + 文字”的入口样式，不使用白色边框按钮。
-- 首页“家居产业链服务”卡片分别跳转 `industry_chain?section=upstream|midstream|downstream`，只展示上游/中游/下游对应树分组；首页“利企配套服务”卡片分别跳转 `enterprise_support?section=tax|human-resource|construction|agency`，只展示财税/人力资源/项目施工/中介对应树分组。
+- 首页“家居产业链服务”卡片分别跳转 `industry_chain?section=upstream|midstream|downstream`，只展示上游/中游/下游对应树分组；2026-06-05 新版框架起，“利企配套服务”卡片跳转 `enterprise_support?section=policy|legal|talent|finance|trade|social-resource|assistance|derivative`，对应政策/法律/人才/金融/国际贸易/社会服务（企业）资源/帮办/衍生服务。
+- `policy/legal/talent/finance/assistance/trade` 等 section key 同时兼容旧 `value_added` 过滤和新版 `enterprise_support` 过滤；`filterTreeByTopNavSection` 会按当前 `moduleCode` 选择对应规则，避免同名 key 覆盖。
 - `filterTreeByTopNavSection` 只匹配模块树顶层节点标题，不递归匹配子节点，避免例如上游子节点文案含“上下游”时误把上游带入“下游”筛选结果。
 - `HomeIndustryHomePage.jsx`：顶部导航改用固定业务入口；原首页分组服务卡片和 banner 逻辑保持不变。
 - `ModuleDetailPage.jsx`：读取 URL query 中的 `section`，对模块树递归筛选，仅将匹配业务分组传给左侧导航和右侧内容区；补充 `IntersectionObserver` 不存在时的环境保护，避免测试环境报错。

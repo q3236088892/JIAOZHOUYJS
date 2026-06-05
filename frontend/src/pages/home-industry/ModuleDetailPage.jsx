@@ -80,6 +80,7 @@ const FIELD_BRANCH_TITLES = new Set([
 
 const ACTION_FIELD_TITLES = new Set(['线上申报', '我要咨询', '我要申报', '我要办理'])
 const WIDE_FIELD_TITLES = new Set(['服务内容', '服务地点/窗口', '服务地点窗口'])
+const HIDDEN_FIELD_TITLES = new Set(['提供部门'])
 const FIELD_BRANCH_SERVICE_CATEGORY_TITLES = new Set([
   '税务政策咨询、常见税务风险防范培训',
   '工业技术改造等政策咨询',
@@ -233,8 +234,9 @@ function getFieldBranchItem(fieldNode) {
 
 function FieldBranchServiceCard({ category }) {
   const items = getFieldBranchNodes(category).map(getFieldBranchItem)
-  const infoItems = items.filter((item) => !ACTION_FIELD_TITLES.has(item.normalizedLabel))
-  const actionItems = items.filter((item) => ACTION_FIELD_TITLES.has(item.normalizedLabel))
+  const visibleItems = items.filter((item) => !HIDDEN_FIELD_TITLES.has(item.normalizedLabel))
+  const infoItems = visibleItems.filter((item) => !ACTION_FIELD_TITLES.has(item.normalizedLabel))
+  const actionItems = visibleItems.filter((item) => ACTION_FIELD_TITLES.has(item.normalizedLabel))
 
   return (
     <article className="hd-topic-card hd-service-detail-card hd-field-service-card">
