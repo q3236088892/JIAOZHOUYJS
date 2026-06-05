@@ -88,6 +88,9 @@ function findModuleIdByCode(moduleMap, code) {
 function importSheet(moduleId, sheetName, data) {
   let created = 0
   let skipped = 0
+  const importOptions = {
+    removeProvideDepartment: shouldRemoveProvideDepartment(moduleId)
+  }
 
   // Detect column structure from header row (row 1, 0-indexed)
   const headerRow = data[1]
@@ -152,13 +155,18 @@ function importSheet(moduleId, sheetName, data) {
 
         // Create content for leaf nodes
         if (isLeaf) {
-          createLeafContent(nodeId, row, colMap, actualLeafDepth)
+          createLeafContent(nodeId, row, colMap, actualLeafDepth, importOptions)
         }
       }
     }
   }
 
   return { created, skipped }
+}
+
+function shouldRemoveProvideDepartment(moduleId) {
+  const module = querySql('SELECT code, title FROM cd_module WHERE id=? LIMIT 1', [moduleId])[0]
+  return module?.code === 'enterprise_support' || String(module?.title || '').includes('利企配套')
 }
 
 function detectColumns(headerRow) {
@@ -188,15 +196,15 @@ function detectColumns(headerRow) {
   }
 }
 
-function createLeafContent(nodeId, row, colMap, leafDepth) {
+function createLeafContent(nodeId, row, colMap, leafDepth, options = {}) {
   const leafCol = colMap.levelCols[leafDepth] ?? colMap.levelCols[colMap.levelCols.length - 1]
-  const contentText = String(row[leafCol] ?? '').trim()
+  const contentText = normalizeImportedContentText(String(row[leafCol] ?? '').trim(), options)
   const department = colMap.deptCol >= 0 ? String(row[colMap.deptCol] ?? '').trim() : ''
   const remark = colMap.remarkCol >= 0 ? String(row[colMap.remarkCol] ?? '').trim() : ''
 
   if (!contentText && !department && !remark) return
 
-  const detected = detectContentType(contentText)
+  const detected = detectContentType(contentText, options)
 
   if (detected.type === 'link') {
     upsertContent(nodeId, {
@@ -231,26 +239,67 @@ function createLeafContent(nodeId, row, colMap, leafDepth) {
  * - "服务内容：xxx\n服务地点：xxx" → info with parsed fields
  * - Otherwise → richtext
  */
-function detectContentType(text) {
-  if (!text) return { type: 'richtext' }
+export function normalizeImportedContentText(text, options = {}) {
+  const value = String(text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
+  if (!value || !options.removeProvideDepartment) return value
+
+  const nextLabelRe = /^(服务内容|服务地点|服务地点\/窗口|办公时间|咨询电话|我要咨询|我要申报|线上申报)[：:]/
+  const lines = value.split('\n')
+  const kept = []
+  let skipping = false
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (/^提供部门[：:]/.test(trimmed)) {
+      skipping = true
+      continue
+    }
+    if (skipping && nextLabelRe.test(trimmed)) {
+      skipping = false
+    }
+    if (!skipping) kept.push(line)
+  }
+  return kept.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+function normalizeLinkLabel(text, url, rawLabel = '') {
+  if (String(text || '').includes('山东政务服务中介超市')) {
+    return '点击访问山东政务服务中介超市'
+  }
+  return rawLabel.trim() || url
+}
+
+export function detectContentType(text, options = {}) {
+  const normalizedText = normalizeImportedContentText(text, options)
+  if (!normalizedText) return { type: 'richtext' }
 
   // Link pattern: "跳" + description + "网址：URL"
-  const linkMatch = text.match(/跳[“"]?(.*?)[”"]?\s*\n?\s*网址[：:]\s*(https?:\/\/\S+)/)
+  const linkMatch = normalizedText.match(/跳[“"]?(.*?)[”"]?\s*(?:网站)?网址[：:]\s*(https?:\/\/[^\s）)]+)/)
   if (linkMatch) {
+    const url = linkMatch[2].trim()
     return {
       type: 'link',
-      label: linkMatch[1].trim(),
-      url: linkMatch[2].trim()
+      label: normalizeLinkLabel(normalizedText, url, linkMatch[1]),
+      url
     }
   }
 
   // Plain URL pattern
-  const urlMatch = text.match(/^(https?:\/\/\S+)$/)
+  const urlMatch = normalizedText.match(/^(https?:\/\/\S+)$/)
   if (urlMatch) {
     return {
       type: 'link',
-      label: text,
+      label: normalizedText,
       url: urlMatch[1]
+    }
+  }
+
+  const embeddedUrlMatch = normalizedText.match(/https?:\/\/[^\s）)]+/)
+  if (embeddedUrlMatch) {
+    const url = embeddedUrlMatch[0]
+    return {
+      type: 'link',
+      label: normalizeLinkLabel(normalizedText, url),
+      url
     }
   }
 
@@ -269,7 +318,7 @@ function detectContentType(text) {
   const fields = []
   for (const pattern of infoPatterns) {
     const regex = new RegExp(`${pattern.label}[：:]([^\\n]+)`)
-    const m = text.match(regex)
+    const m = normalizedText.match(regex)
     if (m) {
       fields.push({
         field_key: pattern.key,

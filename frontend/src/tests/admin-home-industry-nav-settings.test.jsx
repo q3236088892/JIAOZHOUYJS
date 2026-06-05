@@ -52,6 +52,11 @@ describe('AdminHomeIndustryPage navigation settings', () => {
     )
 
     fireEvent.click(await screen.findByRole('button', { name: /导航菜单设置/ }))
+    expect(screen.getAllByRole('switch', { name: /^显示/ })).toHaveLength(3)
+    expect(screen.getByRole('switch', { name: '显示首页' })).toBeInTheDocument()
+    expect(screen.getByRole('switch', { name: '显示产业简介' })).toBeInTheDocument()
+    expect(screen.queryByRole('switch', { name: '显示企业办证' })).not.toBeInTheDocument()
+
     const promoSwitch = await screen.findByRole('switch', { name: '显示招商宣传' })
     expect(promoSwitch).not.toBeChecked()
 

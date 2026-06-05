@@ -58,6 +58,23 @@ describe('HomeIndustryHomePage grouped layout', () => {
     expect(serviceBoard.getByRole('link', { name: /衍生服务/ })).toHaveAttribute('href', '/homeIndustry/enterprise_support?section=derivative')
   })
 
+  it('uses different icons for each home service entry', async () => {
+    const { container } = render(
+      <MemoryRouter>
+        <HomeIndustryHomePage />
+      </MemoryRouter>
+    )
+
+    const serviceBoardElement = container.querySelector('.hd-home-service-board')
+    await within(serviceBoardElement).findByRole('heading', { name: '家居产业链服务' })
+
+    const iconSrcs = [...serviceBoardElement.querySelectorAll('.hd-home-service-card__icon')]
+      .map((icon) => icon.getAttribute('src'))
+
+    expect(iconSrcs).toHaveLength(11)
+    expect(new Set(iconSrcs).size).toBe(11)
+  })
+
   it('renders the fixed top navigation from the 2026.6.5 framework', async () => {
     const { container } = render(
       <MemoryRouter>

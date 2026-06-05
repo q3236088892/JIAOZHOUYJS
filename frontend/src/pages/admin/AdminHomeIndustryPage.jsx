@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Input, Modal, Select, Space, Switch, Tree, message, Tag, Popconfirm, Dropdown, Upload } from 'antd'
-import { PlusOutlined, DeleteOutlined, ImportOutlined, FolderOutlined, FileTextOutlined, DownOutlined, PictureOutlined, UploadOutlined, SettingOutlined } from '@ant-design/icons'
+import { PlusOutlined, DeleteOutlined, ImportOutlined, FolderOutlined, FileTextOutlined, DownOutlined, PictureOutlined, UploadOutlined, SettingOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import {
   getAdminCdModules, createAdminCdModule, updateAdminCdModule, uploadCdImage,
   getAdminCdTree, createAdminCdNode, updateAdminCdNode, deleteAdminCdNode,
@@ -16,6 +16,98 @@ import {
 import ContentEditor from './ContentEditor'
 import ExcelImportModal from './ExcelImportModal'
 import '../../styles/admin.css'
+
+const MODULE_DISPLAY_TITLES = {
+  value_added: '首页展示'
+}
+
+const SPECIAL_TEMPLATE_ASSETS = {
+  产业简介: {
+    title: '产业简介',
+    route: '/homeIndustry/value_added?section=industry-intro',
+    assetDir: '/home-industry/industry-intro/',
+    description: '前台使用专题展板模板展示，后台正文内容不会直接作为前台页面主体展示。',
+    assets: [
+      { type: 'image', title: '产业简介展板1', src: '/home-industry/industry-intro/industry-intro-01.webp', alt: '产业简介展板1' },
+      { type: 'image', title: '产业简介展板2', src: '/home-industry/industry-intro/industry-intro-02.webp', alt: '产业简介展板2' },
+      { type: 'image', title: '上合智能家居产业情况介绍', src: '/home-industry/industry-intro/shanghe-smart-home.webp', alt: '上合智能家居产业情况介绍' },
+      { type: 'image', title: '源氏木语家具产业情况介绍', src: '/home-industry/industry-intro/yuanshi-muyu-home.webp', alt: '源氏木语家具产业情况介绍' }
+    ]
+  },
+  招商宣传: {
+    title: '招商宣传',
+    route: '/homeIndustry/value_added?section=investment-promo',
+    assetDir: '/home-industry/investment-promo/',
+    description: '前台使用视频置顶 + 招商展板模板展示，后台正文内容不会直接作为前台页面主体展示。',
+    assets: [
+      { type: 'video', title: '宣传视频', src: '/home-industry/investment-promo/promo-video.mp4' },
+      { type: 'image', title: '完善供应链展板', src: '/home-industry/investment-promo/supply-chain.webp', alt: '完善供应链展板' },
+      { type: 'image', title: '做强产业链展板', src: '/home-industry/investment-promo/strong-chain.webp', alt: '做强产业链展板' }
+    ]
+  }
+}
+
+function getModuleDisplayTitle(module) {
+  return MODULE_DISPLAY_TITLES[module?.code] || module?.title || ''
+}
+
+function findNodePath(tree, nodeId, path = []) {
+  for (const node of tree || []) {
+    const nextPath = [...path, node]
+    if (String(node.id) === String(nodeId)) return nextPath
+    const childPath = findNodePath(node.children || [], nodeId, nextPath)
+    if (childPath) return childPath
+  }
+  return null
+}
+
+function getSpecialTemplateConfig(module, tree, nodeId) {
+  if (module?.code !== 'value_added' || !nodeId) return null
+  const path = findNodePath(tree, nodeId)
+  const rootTitle = path?.[0]?.title
+  return SPECIAL_TEMPLATE_ASSETS[rootTitle] || null
+}
+
+function SpecialTemplateAssetCard({ config }) {
+  if (!config) return null
+  return (
+    <div className="cd-special-template-card">
+      <div className="cd-special-template-card__header">
+        <div>
+          <div className="cd-special-template-card__title">前台专题模板说明</div>
+          <div className="cd-special-template-card__desc">
+            {config.description}
+            <br />
+            前台访问地址：<code>{config.route}</code>
+            <br />
+            前台素材目录：<code>{config.assetDir}</code>
+          </div>
+        </div>
+        <Tag color="blue">静态专题</Tag>
+      </div>
+      <div className="cd-special-template-card__grid">
+        {config.assets.map((asset) => (
+          <div key={asset.src} className="cd-special-template-asset">
+            <div className="cd-special-template-asset__title">{asset.title}</div>
+            {asset.type === 'image' ? (
+              <img
+                src={asset.src}
+                alt={asset.alt || asset.title}
+                className="cd-special-template-asset__preview"
+              />
+            ) : (
+              <div className="cd-special-template-asset__preview cd-special-template-asset__preview--video">
+                <PlayCircleOutlined style={{ marginRight: 6, color: '#427aff' }} />
+                {asset.src.split('/').pop()}
+              </div>
+            )}
+            <div className="cd-special-template-asset__path">{asset.src}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function AdminHomeIndustryPage() {
   const navigate = useNavigate()
@@ -189,6 +281,9 @@ export default function AdminHomeIndustryPage() {
     loadTree()
   }
 
+  const selectedModule = modules.find(m => m.id === selectedModuleId)
+  const selectedSpecialTemplateConfig = getSpecialTemplateConfig(selectedModule, rawTree, selectedNodeId)
+
   const renderTreeTitle = (nodeData) => {
     const isLeaf = nodeData.data?.node_type === 'leaf'
     return (
@@ -239,12 +334,12 @@ export default function AdminHomeIndustryPage() {
       </div>
 
       <div className="admin-card">
-        <Space style={{ marginBottom: 16 }}>
+        <Space className="cd-admin-toolbar">
           <Select
             style={{ width: 200 }}
             value={selectedModuleId}
             onChange={(v) => { setSelectedModuleId(v); setSelectedNodeId(null); setSelectedNode(null) }}
-            options={modules.map((m) => ({ label: m.title, value: m.id }))}
+            options={modules.map((m) => ({ label: getModuleDisplayTitle(m), value: m.id }))}
             placeholder="选择模块"
           />
           <Button icon={<PlusOutlined />} onClick={() => setShowModuleModal(true)}>{'新增模块'}</Button>
@@ -343,7 +438,7 @@ export default function AdminHomeIndustryPage() {
                     style={{ width: 140 }}
                     value={selectedModuleId}
                     onChange={(v) => { setSelectedModuleId(v); setSelectedNodeId(null); setSelectedNode(null) }}
-                    options={modules.map((m) => ({ label: m.title, value: m.id }))}
+                    options={modules.map((m) => ({ label: getModuleDisplayTitle(m), value: m.id }))}
                   />
                 </div>
               </div>
@@ -368,12 +463,12 @@ export default function AdminHomeIndustryPage() {
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
-                  <span>{modules.find(m => m.id === selectedModuleId)?.title || '该模块'} 暂无图片</span>
+                  <span>{getModuleDisplayTitle(selectedModule) || '该模块'} 暂无图片</span>
                 )}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 12, color: '#999' }}>
-                  当前：<span style={{ color: '#427aff', fontWeight: 500 }}>{modules.find(m => m.id === selectedModuleId)?.title || '-'}</span>
+                  当前：<span style={{ color: '#427aff', fontWeight: 500 }}>{getModuleDisplayTitle(selectedModule) || '-'}</span>
                 </span>
                 <Upload
                   accept="image/*"
@@ -432,10 +527,13 @@ export default function AdminHomeIndustryPage() {
 
           <div className="cd-admin-editor">
             {selectedNode ? (
-              <ContentEditor
-                node={selectedNode}
-                onRefresh={loadTree}
-              />
+              <>
+                <SpecialTemplateAssetCard config={selectedSpecialTemplateConfig} />
+                <ContentEditor
+                  node={selectedNode}
+                  onRefresh={loadTree}
+                />
+              </>
             ) : (
               <div className="cd-admin-empty">
                 <FolderOutlined style={{ fontSize: 48, color: '#ccc' }} />
@@ -473,7 +571,7 @@ export default function AdminHomeIndustryPage() {
             onChange={(e) => setNewModuleCode(e.target.value)}
           />
           <Input
-            placeholder="模块标题（如 增值服务）"
+            placeholder="模块标题（如 首页展示）"
             value={newModuleTitle}
             onChange={(e) => setNewModuleTitle(e.target.value)}
           />

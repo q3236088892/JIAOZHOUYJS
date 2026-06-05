@@ -32,9 +32,9 @@ const serviceGroups = [
     title: '家居产业链服务',
     className: 'hd-home-service-group--chain',
     entries: [
-      { key: 'upstream', label: '上游', description: '原辅料采购、仓储', moduleCodes: ['industry_chain'], section: 'upstream', titleKeywords: ['产业链', '上游', '原辅料', '仓储'] },
-      { key: 'midstream', label: '中游', description: '生产制造', moduleCodes: ['industry_chain'], section: 'midstream', titleKeywords: ['产业链', '中游', '生产制造'] },
-      { key: 'downstream', label: '下游', description: '销售出海', moduleCodes: ['industry_chain'], section: 'downstream', titleKeywords: ['产业链', '下游', '销售出海'] }
+      { key: 'upstream', label: '上游', description: '原辅料采购、仓储', icon: `${ICON_BASE}/openRestaurant.png`, moduleCodes: ['industry_chain'], section: 'upstream', titleKeywords: ['产业链', '上游', '原辅料', '仓储'] },
+      { key: 'midstream', label: '中游', description: '生产制造', icon: `${ICON_BASE}/organize_performance.png`, moduleCodes: ['industry_chain'], section: 'midstream', titleKeywords: ['产业链', '中游', '生产制造'] },
+      { key: 'downstream', label: '下游', description: '销售出海', icon: `${ICON_BASE}/travel_study.png`, moduleCodes: ['industry_chain'], section: 'downstream', titleKeywords: ['产业链', '下游', '销售出海'] }
     ]
   },
   {
@@ -42,14 +42,14 @@ const serviceGroups = [
     title: '利企配套服务',
     className: 'hd-home-service-group--support',
     entries: [
-      { key: 'policy', label: '政策服务', moduleCodes: ['enterprise_support'], section: 'policy', titleKeywords: ['利企配套', '政策服务'] },
-      { key: 'legal', label: '法律服务', moduleCodes: ['enterprise_support'], section: 'legal', titleKeywords: ['利企配套', '法律服务'] },
-      { key: 'talent', label: '人才服务', moduleCodes: ['enterprise_support'], section: 'talent', titleKeywords: ['利企配套', '人才服务'] },
-      { key: 'finance', label: '金融服务', moduleCodes: ['enterprise_support'], section: 'finance', titleKeywords: ['利企配套', '金融服务'] },
-      { key: 'trade', label: '国际贸易服务', moduleCodes: ['enterprise_support'], section: 'trade', titleKeywords: ['利企配套', '国际贸易服务'] },
-      { key: 'social-resource', label: '社会服务（企业）资源', moduleCodes: ['enterprise_support'], section: 'social-resource', titleKeywords: ['利企配套', '社会服务', '企业资源'] },
-      { key: 'assistance', label: '帮办服务', moduleCodes: ['enterprise_support'], section: 'assistance', titleKeywords: ['利企配套', '帮办服务'] },
-      { key: 'derivative', label: '衍生服务', moduleCodes: ['enterprise_support'], section: 'derivative', titleKeywords: ['利企配套', '衍生服务'] }
+      { key: 'policy', label: '政策服务', icon: `${ICON_BASE}/policy.png`, moduleCodes: ['enterprise_support'], section: 'policy', titleKeywords: ['利企配套', '政策服务'] },
+      { key: 'legal', label: '法律服务', icon: `${ICON_BASE}/law.png`, moduleCodes: ['enterprise_support'], section: 'legal', titleKeywords: ['利企配套', '法律服务'] },
+      { key: 'talent', label: '人才服务', icon: `${ICON_BASE}/talents.png`, moduleCodes: ['enterprise_support'], section: 'talent', titleKeywords: ['利企配套', '人才服务'] },
+      { key: 'finance', label: '金融服务', icon: `${ICON_BASE}/financial.png`, moduleCodes: ['enterprise_support'], section: 'finance', titleKeywords: ['利企配套', '金融服务'] },
+      { key: 'trade', label: '国际贸易服务', icon: `${ICON_BASE}/hotel_accommodation.png`, moduleCodes: ['enterprise_support'], section: 'trade', titleKeywords: ['利企配套', '国际贸易服务'] },
+      { key: 'social-resource', label: '社会服务（企业）资源', icon: `${ICON_BASE}/cultural_and_creative_industries.png`, moduleCodes: ['enterprise_support'], section: 'social-resource', titleKeywords: ['利企配套', '社会服务', '企业资源'] },
+      { key: 'assistance', label: '帮办服务', icon: `${ICON_BASE}/assistant.png`, moduleCodes: ['enterprise_support'], section: 'assistance', titleKeywords: ['利企配套', '帮办服务'] },
+      { key: 'derivative', label: '衍生服务', icon: `${ICON_BASE}/entertainment.png`, moduleCodes: ['enterprise_support'], section: 'derivative', titleKeywords: ['利企配套', '衍生服务'] }
     ]
   }
 ]
@@ -65,7 +65,8 @@ function findEntryModule(entry, modules) {
   return modules.find((module) => textIncludesAny(module.title, entry.titleKeywords))
 }
 
-function getModuleIcon(module, index) {
+function getEntryIcon(entry, module, index) {
+  if (entry.icon) return entry.icon
   if (module.icon_url) return module.icon_url
   if (moduleIcons[module.code]) return moduleIcons[module.code]
   return fallbackIcons[index % fallbackIcons.length]
@@ -92,7 +93,7 @@ function HomeServiceEntry({ entry, module, index }) {
     <>
       <img
         className="hd-home-service-card__icon"
-        src={module ? getModuleIcon(module, index) : fallbackIcons[index % fallbackIcons.length]}
+        src={module ? getEntryIcon(entry, module, index) : (entry.icon || fallbackIcons[index % fallbackIcons.length])}
         alt=""
         aria-hidden="true"
         onError={(event) => { event.currentTarget.style.visibility = 'hidden' }}

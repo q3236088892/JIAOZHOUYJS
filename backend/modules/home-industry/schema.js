@@ -13,6 +13,7 @@ export function ensureHomeIndustryTables(db) {
   // Migration: add banner columns if missing
   try { db.run(`ALTER TABLE cd_module ADD COLUMN home_banner_url TEXT`) } catch {}
   try { db.run(`ALTER TABLE cd_module ADD COLUMN detail_banner_url TEXT`) } catch {}
+  db.run(`UPDATE cd_module SET title='首页展示', updated_at=datetime('now','localtime') WHERE code='value_added' AND title='增值服务'`)
 
   db.run(`CREATE TABLE IF NOT EXISTS cd_node (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
