@@ -32,7 +32,7 @@ const serviceGroups = [
     title: '家居产业链服务',
     className: 'hd-home-service-group--chain',
     entries: [
-      { key: 'upstream', label: '上游', description: '原辅料采购、仓储', icon: `${ICON_BASE}/openRestaurant.png`, moduleCodes: ['industry_chain'], section: 'upstream', titleKeywords: ['产业链', '上游', '原辅料', '仓储'] },
+      { key: 'upstream', label: '上游', description: '原辅料采购、仓储', icon: `${ICON_BASE}/upstream_home_percent.svg`, moduleCodes: ['industry_chain'], section: 'upstream', titleKeywords: ['产业链', '上游', '原辅料', '仓储'] },
       { key: 'midstream', label: '中游', description: '生产制造', icon: `${ICON_BASE}/organize_performance.png`, moduleCodes: ['industry_chain'], section: 'midstream', titleKeywords: ['产业链', '中游', '生产制造'] },
       { key: 'downstream', label: '下游', description: '销售出海', icon: `${ICON_BASE}/travel_study.png`, moduleCodes: ['industry_chain'], section: 'downstream', titleKeywords: ['产业链', '下游', '销售出海'] }
     ]

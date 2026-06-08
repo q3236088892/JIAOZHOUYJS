@@ -71,6 +71,10 @@ describe('HomeIndustryHomePage grouped layout', () => {
     const iconSrcs = [...serviceBoardElement.querySelectorAll('.hd-home-service-card__icon')]
       .map((icon) => icon.getAttribute('src'))
 
+    const upstreamCard = serviceBoardElement.querySelector('a[href="/homeIndustry/industry_chain?section=upstream"]')
+    expect(upstreamCard).not.toBeNull()
+    expect(upstreamCard.querySelector('.hd-home-service-card__icon')).toHaveAttribute('src', '/historic/icons/upstream_home_percent.svg')
+
     expect(iconSrcs).toHaveLength(11)
     expect(new Set(iconSrcs).size).toBe(11)
   })
