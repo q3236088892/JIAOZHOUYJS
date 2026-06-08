@@ -30,7 +30,7 @@ vi.mock('../api/homeIndustry', () => ({
                       children: [
                         {
                           id: 4,
-                          title: '国家税务总局青岛市电子税务局',
+                          title: '税务登记',
                           node_type: 'leaf',
                           content_type: 'link',
                           link_url: 'https://etax.qingdao.chinatax.gov.cn:8443/',
@@ -65,8 +65,8 @@ describe('ModuleDetailPage links', () => {
     vi.unstubAllGlobals()
   })
 
-  it('renders flattened link leaf nodes as clickable anchors', async () => {
-    render(
+  it('renders link leaf cards with node.title as the visible label, link_url as the href', async () => {
+    const { container } = render(
       <MemoryRouter initialEntries={['/homeIndustry/value_added']}>
         <Routes>
           <Route path="/homeIndustry/:moduleCode" element={<ModuleDetailPage />} />
@@ -74,11 +74,18 @@ describe('ModuleDetailPage links', () => {
       </MemoryRouter>
     )
 
-    const link = await screen.findByRole('link', {
-      name: /国家税务总局青岛市电子税务局/
-    })
+    // 展开 "税务登记" branch（自动展开的不一定是它，强制点击一下确保子节点渲染）
+    const toggle = await screen.findByRole('button', { name: /税务登记/ })
+    toggle.click()
 
-    expect(link).toHaveAttribute('href', 'https://etax.qingdao.chinatax.gov.cn:8443/')
-    expect(link).toHaveAttribute('target', '_blank')
+    // Visible label is the leaf's own title (业务名称), not the link_label (平台名)
+    const linkCard = container.querySelector('.hd-service-detail-card--link')
+    expect(linkCard).not.toBeNull()
+    const link = linkCard.querySelector('a')
+    expect(link.getAttribute('href')).toBe('https://etax.qingdao.chinatax.gov.cn:8443/')
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.textContent).toContain('税务登记')
+    // 平台名 link_label 不应该作为可见文字出现
+    expect(screen.queryByText('国家税务总局青岛市电子税务局')).not.toBeInTheDocument()
   })
 })

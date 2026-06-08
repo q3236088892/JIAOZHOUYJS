@@ -461,7 +461,7 @@ function TopicCard({ node, emoji, expanded, onToggle }) {
           >
             <span className="hd-topic-title__text">
               <span className="hd-topic-title__icon" aria-hidden="true">{emoji}</span>
-              <span className="hd-topic-title__name">{content.link_label || node.title}</span>
+              <span className="hd-topic-title__name">{node.title || content.link_label}</span>
             </span>
             <span className="hd-topic-title__arrow">↗</span>
           </a>
