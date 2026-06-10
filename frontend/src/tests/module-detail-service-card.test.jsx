@@ -198,9 +198,37 @@ describe('ModuleDetailPage service cards', () => {
     await waitFor(() => {
       const leftMenu = container.querySelector('.hd-left-menu')
       expect(leftMenu).not.toBeNull()
-      expect(leftMenu).toHaveTextContent('1.3衍生服务')
+      expect(leftMenu).not.toHaveTextContent('1.3')
       expect(leftMenu).toHaveTextContent('共享备料服务')
       expect(leftMenu).toHaveTextContent('消防安全专场培训、指导服务')
+    })
+  })
+
+
+  it('strips leading numeric prefixes from frontend node titles', async () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/homeIndustry/industry_chain?section=upstream']}>
+        <Routes>
+          <Route path="/homeIndustry/:moduleCode" element={<ModuleDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      const leftStageTitle = container.querySelector('.hd-left-stage-title')
+      const leftCategoryTitle = container.querySelector('.hd-left-category-title')
+      const stageTitle = container.querySelector('.hd-stage-title')
+      const categoryHeading = container.querySelector('.hd-category-block > h3')
+
+      expect(leftStageTitle).not.toBeNull()
+      expect(leftCategoryTitle).not.toBeNull()
+      expect(stageTitle).not.toBeNull()
+      expect(categoryHeading).not.toBeNull()
+
+      expect(leftStageTitle.textContent).not.toMatch(/1\./)
+      expect(leftCategoryTitle.textContent).not.toMatch(/1\.3/)
+      expect(stageTitle.textContent).not.toMatch(/^1\./)
+      expect(categoryHeading.textContent).not.toMatch(/1\.3/)
     })
   })
 

@@ -105,6 +105,10 @@ function normalizeFieldTitle(value) {
   return String(value || '').replace(/\s+/g, '').replace(/[：:]+$/, '')
 }
 
+function stripLeadingTitleNumber(value) {
+  return String(value || '').replace(/^\s*(?:\d+(?:\.\d+)+(?:[.、．])?|\d+[.、．])\s*/, '').trimStart()
+}
+
 function isFieldBranchNode(node) {
   return node?.node_type === 'branch' && FIELD_BRANCH_TITLES.has(normalizeFieldTitle(node.title))
 }
@@ -138,15 +142,15 @@ function buildLeftMenu(tree) {
   if (!tree || tree.length === 0) return []
   return tree.filter(n => n.node_type === 'branch').map((level1) => ({
     stageKey: `stage-${level1.id}`,
-    stageTitle: level1.title,
+    stageTitle: stripLeadingTitleNumber(level1.title),
     categories: (level1.children || []).filter(n => n.node_type === 'branch').map((level2) => ({
       categoryKey: `cat-${level2.id}`,
-      categoryTitle: level2.title,
+      categoryTitle: stripLeadingTitleNumber(level2.title),
       items: getFieldBranchNodes(level2).length > 0
         ? []
         : getLeftMenuItemNodes(level2).map((child) => ({
           anchorKey: `node-${child.id}`,
-          title: child.title,
+          title: stripLeadingTitleNumber(child.title),
           nodeId: child.id
         }))
     }))
@@ -212,7 +216,7 @@ function collectLeafNodes(node) {
 }
 
 function getFieldBranchItem(fieldNode) {
-  const label = fieldNode.title
+  const label = stripLeadingTitleNumber(fieldNode.title)
   const leaves = collectLeafNodes(fieldNode)
   const values = []
   let linkUrl = ''
@@ -470,7 +474,7 @@ function TopicCard({ node, emoji, expanded, onToggle }) {
           >
             <span className="hd-topic-title__text">
               <span className="hd-topic-title__icon" aria-hidden="true">{emoji}</span>
-              <span className="hd-topic-title__name">{node.title || content.link_label}</span>
+              <span className="hd-topic-title__name">{stripLeadingTitleNumber(node.title || content.link_label)}</span>
             </span>
             <span className="hd-topic-title__arrow">↗</span>
           </a>
@@ -493,7 +497,7 @@ function TopicCard({ node, emoji, expanded, onToggle }) {
         <div className="hd-topic-title" style={{ cursor: 'default' }}>
           <span className="hd-topic-title__text">
             <span className="hd-topic-title__icon" aria-hidden="true">{emoji}</span>
-            <span className="hd-topic-title__name">{node.title}</span>
+            <span className="hd-topic-title__name">{stripLeadingTitleNumber(node.title)}</span>
           </span>
         </div>
         {hasBody && (
@@ -515,7 +519,7 @@ function TopicCard({ node, emoji, expanded, onToggle }) {
       >
         <span className="hd-topic-title__text">
           <span className="hd-topic-title__icon" aria-hidden="true">{emoji}</span>
-          <span className="hd-topic-title__name">{node.title}</span>
+          <span className="hd-topic-title__name">{stripLeadingTitleNumber(node.title)}</span>
         </span>
         <span className={`hd-topic-title__arrow${isOpen ? ' is-open' : ''}`}>▼</span>
       </button>
@@ -549,11 +553,11 @@ function RightContent({ tree, expanded, onToggle, moduleInfo }) {
           className={`hd-stage-section ${STAGE_VARIANTS[stageIdx % STAGE_VARIANTS.length]}`}
           id={`stage-${level1.id}`}
         >
-          <div className="hd-stage-title">{level1.title}</div>
+          <div className="hd-stage-title">{stripLeadingTitleNumber(level1.title)}</div>
 
           {(level1.children || []).filter(n => n.node_type === 'branch').map((level2) => (
             <div key={level2.id} className="hd-category-block" id={`cat-${level2.id}`}>
-              <h3>{level2.title}</h3>
+              <h3>{stripLeadingTitleNumber(level2.title)}</h3>
 
               {getFieldBranchNodes(level2).length > 0 ? (
                 <FieldBranchServiceCard category={level2} />
@@ -616,7 +620,7 @@ function SpecialNodeContent({ node }) {
     <div className="hd-special-node-children">
       {(node.children || []).map((child) => (
         <div key={child.id} className="hd-special-subsection">
-          <h3>{child.title}</h3>
+          <h3>{stripLeadingTitleNumber(child.title)}</h3>
           <SpecialNodeContent node={child} />
         </div>
       ))}
@@ -632,10 +636,10 @@ function IndustryIntroManagedContent({ tree }) {
 
   return (
     <section className="hd-special-content-section hd-special-managed-content">
-      <h2>{root.title}</h2>
+      <h2>{stripLeadingTitleNumber(root.title)}</h2>
       {sections.map((section) => (
         <div key={section.id} className="hd-special-subsection">
-          {sections.length > 1 && <h3>{section.title}</h3>}
+          {sections.length > 1 && <h3>{stripLeadingTitleNumber(section.title)}</h3>}
           <SpecialNodeContent node={section.node} />
         </div>
       ))}
@@ -669,7 +673,7 @@ function IndustryIntroSpecialContent({ activeAnchor, onJumpAnchor, tree }) {
                 onClick={(event) => onJumpAnchor(event, anchorKey)}
               >
                 <span className="hd-left-item-dot" />
-                <span>{section.title}</span>
+                <span>{stripLeadingTitleNumber(section.title)}</span>
               </a>
             )
           })}
@@ -688,7 +692,7 @@ function IndustryIntroSpecialContent({ activeAnchor, onJumpAnchor, tree }) {
             id={`industry-intro-${section.id}`}
             className="hd-special-content-section hd-special-poster-section"
           >
-            <h2>{section.title}</h2>
+            <h2>{stripLeadingTitleNumber(section.title)}</h2>
             <div className="hd-special-poster-list">
               {section.images.map((image) => (
                 <img
@@ -728,7 +732,7 @@ function InvestmentPromoSpecialContent({ activeAnchor, onJumpAnchor }) {
                 onClick={(event) => onJumpAnchor(event, anchorKey)}
               >
                 <span className="hd-left-item-dot" />
-                <span>{section.title}</span>
+                <span>{stripLeadingTitleNumber(section.title)}</span>
               </a>
             )
           })}
@@ -746,7 +750,7 @@ function InvestmentPromoSpecialContent({ activeAnchor, onJumpAnchor }) {
             id={`investment-promo-${section.id}`}
             className={`hd-special-content-section hd-special-poster-section${section.type === 'video' ? ' hd-special-video-section' : ''}`}
           >
-            <h2>{section.title}</h2>
+            <h2>{stripLeadingTitleNumber(section.title)}</h2>
             {section.type === 'video' ? (
               <div className="hd-special-promo-video-wrap">
                 <video
@@ -799,7 +803,7 @@ function SpecialSectionContent({ tree, activeAnchor, onJumpAnchor, sectionKey })
     <div className="hd-special-section-layout">
       <aside className="hd-special-anchor-menu">
         <div className="hd-special-anchor-menu__inner">
-          {showAnchorMenuTitle && <div className="hd-special-anchor-menu__title">{root.title}</div>}
+          {showAnchorMenuTitle && <div className="hd-special-anchor-menu__title">{stripLeadingTitleNumber(root.title)}</div>}
           {sections.map((section) => {
             const anchorKey = `special-node-${section.id}`
             return (
@@ -810,7 +814,7 @@ function SpecialSectionContent({ tree, activeAnchor, onJumpAnchor, sectionKey })
                 onClick={(event) => onJumpAnchor(event, anchorKey)}
               >
                 <span className="hd-left-item-dot" />
-                <span>{section.title}</span>
+                <span>{stripLeadingTitleNumber(section.title)}</span>
               </a>
             )
           })}
@@ -820,11 +824,11 @@ function SpecialSectionContent({ tree, activeAnchor, onJumpAnchor, sectionKey })
       <main className="hd-special-content">
         <header className="hd-special-header">
           <span className="hd-special-header__eyebrow">{'\u4e13\u9898\u5c55\u793a'}</span>
-          <h2>{root.title}</h2>
+          <h2>{stripLeadingTitleNumber(root.title)}</h2>
         </header>
         {sections.map((section) => (
           <section key={section.id} id={`special-node-${section.id}`} className="hd-special-content-section">
-            <h2>{section.title}</h2>
+            <h2>{stripLeadingTitleNumber(section.title)}</h2>
             <SpecialNodeContent node={section.node} />
           </section>
         ))}
