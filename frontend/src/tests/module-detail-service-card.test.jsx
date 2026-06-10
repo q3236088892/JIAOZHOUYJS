@@ -86,6 +86,36 @@ vi.mock('../api/homeIndustry', () => ({
                   ]
                 }
               ]
+            },
+            {
+              id: 20,
+              title: '1.上游\n原辅料采购、仓储',
+              node_type: 'branch',
+              children: [
+                {
+                  id: 21,
+                  title: '1.3衍生服务',
+                  node_type: 'branch',
+                  children: [
+                    {
+                      id: 22,
+                      title: '共享备料服务',
+                      node_type: 'leaf',
+                      content_type: 'info',
+                      summary: '提供共享使用集中采购、统一管理的原材料或配套零部件材料。',
+                      children: []
+                    },
+                    {
+                      id: 23,
+                      title: '消防安全专场培训、指导服务',
+                      node_type: 'leaf',
+                      content_type: 'info',
+                      summary: '提供专项消防安全知识普及、技能实操及隐患整改指导服务。',
+                      children: []
+                    }
+                  ]
+                }
+              ]
             }
           ],
           stats: {}
@@ -148,10 +178,30 @@ describe('ModuleDetailPage service cards', () => {
     const leftMenu = container.querySelector('.hd-left-menu')
     expect(leftMenu).not.toBeNull()
     expect(leftMenu).toHaveTextContent('（二）项目服务')
-    expect(leftMenu).toHaveTextContent('项目立项')
-    expect(leftMenu).toHaveTextContent('施工许可')
+    await waitFor(() => {
+      expect(leftMenu).toHaveTextContent('项目立项')
+      expect(leftMenu).toHaveTextContent('施工许可')
+    })
     expect(leftMenu).not.toHaveTextContent('政策服务')
     expect([...container.querySelectorAll('.hd-left-arrow')].map((el) => el.textContent)).not.toContain('?')
+  })
+
+  it('shows leaf children in the left menu for an upstream derivative-service category', async () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/homeIndustry/industry_chain?section=upstream']}>
+        <Routes>
+          <Route path="/homeIndustry/:moduleCode" element={<ModuleDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      const leftMenu = container.querySelector('.hd-left-menu')
+      expect(leftMenu).not.toBeNull()
+      expect(leftMenu).toHaveTextContent('1.3衍生服务')
+      expect(leftMenu).toHaveTextContent('共享备料服务')
+      expect(leftMenu).toHaveTextContent('消防安全专场培训、指导服务')
+    })
   })
 
   it('scrolls to the category section when a left category title is clicked', async () => {

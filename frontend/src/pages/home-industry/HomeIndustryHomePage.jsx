@@ -73,12 +73,13 @@ function getEntryIcon(entry, module, index) {
 }
 
 function HeroTitle({ title }) {
-  const text = title || HOME_TITLE
   const oneTypeKey = '一类事'
+  const text = (title || HOME_TITLE).replace(`“${oneTypeKey}”`, oneTypeKey)
   const idx = text.indexOf(oneTypeKey)
   if (idx === -1) return <h1>{text}</h1>
+  const displayTitle = `${text.substring(0, idx)}“${oneTypeKey}”${text.substring(idx + oneTypeKey.length)}`
   return (
-    <h1>
+    <h1 aria-label={displayTitle}>
       {text.substring(0, idx)}
       <span className="hd-quote">“</span>
       {oneTypeKey}

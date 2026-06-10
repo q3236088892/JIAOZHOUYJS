@@ -33,6 +33,23 @@ afterEach(() => {
 })
 
 describe('HomeIndustryHomePage grouped layout', () => {
+  it('renders the home hero title with a single pair of quotes around 一类事', async () => {
+    render(
+      <MemoryRouter>
+        <HomeIndustryHomePage />
+      </MemoryRouter>
+    )
+
+    expect(await screen.findByRole('heading', {
+      level: 1,
+      name: '胶州市家居产业服务“一类事”'
+    })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', {
+      level: 1,
+      name: '胶州市家居产业服务““一类事””'
+    })).not.toBeInTheDocument()
+  })
+
   it('renders service groups from the 2026.6.5 framework', async () => {
     const { container } = render(
       <MemoryRouter>

@@ -121,9 +121,18 @@ function getFieldBranchNodes(category) {
   return branchChildren
 }
 
+function getLeftMenuItemNodes(category) {
+  const children = category.children || []
+  const branchChildren = children.filter((child) => child.node_type === 'branch')
+  if (branchChildren.length > 0) return branchChildren
+  if (!normalizeText(category.title).includes('衍生服务')) return []
+  return children.filter((child) => child.node_type === 'leaf')
+}
+
 /**
  * Build left menu structure from tree data.
- * Level1 = stage header, Level2 = category, Level3 = branch menu items only (no leaves)
+ * Level1 = stage header, Level2 = category, Level3 = branch anchors.
+ * For derivative-service categories whose direct children are leaves, show leaf anchors.
  */
 function buildLeftMenu(tree) {
   if (!tree || tree.length === 0) return []
@@ -135,7 +144,7 @@ function buildLeftMenu(tree) {
       categoryTitle: level2.title,
       items: getFieldBranchNodes(level2).length > 0
         ? []
-        : (level2.children || []).filter(n => n.node_type === 'branch').map((child) => ({
+        : getLeftMenuItemNodes(level2).map((child) => ({
           anchorKey: `node-${child.id}`,
           title: child.title,
           nodeId: child.id
@@ -616,7 +625,25 @@ function SpecialNodeContent({ node }) {
 }
 
 
-function IndustryIntroSpecialContent({ activeAnchor, onJumpAnchor }) {
+function IndustryIntroManagedContent({ tree }) {
+  const root = getSpecialRoot(tree)
+  const sections = getSpecialSections(root)
+  if (!root || sections.length === 0) return null
+
+  return (
+    <section className="hd-special-content-section hd-special-managed-content">
+      <h2>{root.title}</h2>
+      {sections.map((section) => (
+        <div key={section.id} className="hd-special-subsection">
+          {sections.length > 1 && <h3>{section.title}</h3>}
+          <SpecialNodeContent node={section.node} />
+        </div>
+      ))}
+    </section>
+  )
+}
+
+function IndustryIntroSpecialContent({ activeAnchor, onJumpAnchor, tree }) {
   return (
     <div className="hd-special-section-layout hd-special-section-layout--industry-intro">
       <aside className="hd-special-anchor-menu">
@@ -654,6 +681,7 @@ function IndustryIntroSpecialContent({ activeAnchor, onJumpAnchor }) {
           <span className="hd-special-header__eyebrow">{'\u4e13\u9898\u5c55\u793a'}</span>
           <h2>{'\u4ea7\u4e1a\u7b80\u4ecb'}</h2>
         </header>
+        <IndustryIntroManagedContent tree={tree} />
         {INDUSTRY_INTRO_STATIC_SECTIONS.map((section) => (
           <section
             key={section.id}
@@ -755,7 +783,7 @@ function InvestmentPromoSpecialContent({ activeAnchor, onJumpAnchor }) {
 
 function SpecialSectionContent({ tree, activeAnchor, onJumpAnchor, sectionKey }) {
   if (sectionKey === 'industry-intro') {
-    return <IndustryIntroSpecialContent activeAnchor={activeAnchor} onJumpAnchor={onJumpAnchor} />
+    return <IndustryIntroSpecialContent tree={tree} activeAnchor={activeAnchor} onJumpAnchor={onJumpAnchor} />
   }
   if (sectionKey === 'investment-promo') {
     return <InvestmentPromoSpecialContent activeAnchor={activeAnchor} onJumpAnchor={onJumpAnchor} />

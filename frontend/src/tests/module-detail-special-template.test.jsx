@@ -91,6 +91,8 @@ describe('ModuleDetailPage special section template', () => {
     )
 
     expect((await screen.findAllByRole('heading', { name: '\u4ea7\u4e1a\u7b80\u4ecb' })).length).toBeGreaterThan(0)
+    expect(await screen.findByText('\u80f6\u5dde\u5bb6\u5c45\u4ea7\u4e1a\u57fa\u7840\u624e\u5b9e\u3002')).toBeInTheDocument()
+    expect(screen.getByText('\u533a\u4f4d\u4f18\u8d8a\uff0c\u4ea4\u901a\u4fbf\u5229\u3002')).toBeInTheDocument()
     expect(container.querySelector('.hd-special-section-layout')).not.toBeNull()
     expect(container.querySelector('.hd-left-menu')).toBeNull()
 
