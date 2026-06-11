@@ -26,4 +26,13 @@ describe('home industry detail layout CSS', () => {
     expect(getCssRule('.hd-special-poster-image')).toContain('width: 100%;')
     expect(getCssRule('.hd-special-promo-video-wrap')).toContain('width: 100%;')
   })
+
+  it('adds subtle hierarchy cues to the left tree menu without changing its blue theme', () => {
+    expect(getCssRule('.hd-left-category')).toContain('position: relative;')
+    expect(getCssRule('.hd-left-category')).toContain('background: linear-gradient(90deg, rgba(21, 132, 218, 0.06) 0%, rgba(255, 255, 255, 0) 100%);')
+    expect(getCssRule('.hd-left-category::before')).toContain('width: 1px;')
+    expect(getCssRule('.hd-left-category::before')).toContain('background: rgba(21, 132, 218, 0.16);')
+    expect(getCssRule('.hd-left-category .hd-left-category-title')).toContain('border-left: 3px solid rgba(21, 132, 218, 0.45);')
+    expect(getCssRule('.hd-left-category .hd-left-item')).toContain('margin-left: 18px;')
+  })
 })
