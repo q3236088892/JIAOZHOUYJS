@@ -21,26 +21,30 @@ const storage = multer.diskStorage({
 })
 const upload = multer({ storage })
 
-export function createApp() {
+export function createApp(basePath = (process.env.BASE_PATH || '')) {
   const app = express()
   app.use(cors())
   app.use(express.json())
 
+  const router = express.Router()
+  const BASE = basePath.replace(/\/$/, '')
+  const uploadPrefix = BASE ? `${BASE}/uploads` : '/uploads'
+
   const COLS = ['id', 'title', 'content', 'eventType', 'status', 'createTime', 'updateTime']
   const toObject = (row) => Object.fromEntries(COLS.map((k, i) => [k, row[i]]))
 
-  app.get('/api/events', (req, res) => {
+  router.get('/api/events', (req, res) => {
     const rows = getAll()
     res.json({ code: 200, data: rows.map(toObject), msg: 'success' })
   })
 
-  app.get('/api/events/:id', (req, res) => {
+  router.get('/api/events/:id', (req, res) => {
     const row = getById(Number(req.params.id))
     if (!row) return res.status(404).json({ code: 404, msg: 'not found' })
     res.json({ code: 200, data: toObject(row), msg: 'success' })
   })
 
-  app.post('/api/events', (req, res) => {
+  router.post('/api/events', (req, res) => {
     const { title, content, eventType, status } = req.body || {}
     const normalizedTitle = title == null ? '' : String(title).trim()
     if (!normalizedTitle) {
@@ -56,7 +60,7 @@ export function createApp() {
     res.json({ code: 200, data: toObject(created), msg: 'success' })
   })
 
-  app.put('/api/events/:id', (req, res) => {
+  router.put('/api/events/:id', (req, res) => {
     const id = Number(req.params.id)
     const existing = getById(id)
     if (!existing) {
@@ -84,18 +88,18 @@ export function createApp() {
     res.json({ code: 200, data: toObject(updated), msg: 'success' })
   })
 
-  app.delete('/api/events/:id', (req, res) => {
+  router.delete('/api/events/:id', (req, res) => {
     remove(Number(req.params.id))
     res.json({ code: 200, msg: 'success' })
   })
 
-  app.post('/api/system/oss/upload', upload.single('file'), (req, res) => {
+  router.post('/api/system/oss/upload', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ code: 400, msg: 'no file' })
-    res.json({ code: 200, data: { url: `/uploads/${req.file.filename}`, filename: req.file.originalname }, msg: 'success' })
+    res.json({ code: 200, data: { url: `${uploadPrefix}/${req.file.filename}`, filename: req.file.originalname }, msg: 'success' })
   })
 
   // Auth routes
-  app.post('/api/auth/login', (req, res) => {
+  router.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body || {}
     if (!username || !password) return res.status(400).json({ code: 400, msg: '请输入用户名和密码' })
     const result = login(username, password)
@@ -103,27 +107,29 @@ export function createApp() {
     res.json({ code: 200, data: { token: result.token, username: result.username }, msg: 'success' })
   })
 
-  app.get('/api/auth/me', authMiddleware, (req, res) => {
+  router.get('/api/auth/me', authMiddleware, (req, res) => {
     res.json({ code: 200, data: { username: req.user.username }, msg: 'success' })
   })
 
   // Public routes
-  app.use('/api/historic/public', historicPublicRoutes)
-  app.use('/api/cd/public', homePublicRoutes)
+  router.use('/api/historic/public', historicPublicRoutes)
+  router.use('/api/cd/public', homePublicRoutes)
 
   // Admin routes (protected)
-  app.use('/api/admin/historic', authMiddleware, historicAdminRoutes)
-  app.use('/api/admin/cd', authMiddleware, homeAdminRoutes)
+  router.use('/api/admin/historic', authMiddleware, historicAdminRoutes)
+  router.use('/api/admin/cd', authMiddleware, homeAdminRoutes)
 
-  app.use('/uploads', express.static(uploadsDir))
+  router.use('/uploads', express.static(uploadsDir))
 
   const distDir = path.join(__dirname, '..', 'frontend', 'dist')
   if (fs.existsSync(distDir)) {
-    app.use(express.static(distDir))
-    app.get('*', (req, res) => {
+    router.use(express.static(distDir))
+    router.get('*', (req, res) => {
       res.sendFile(path.join(distDir, 'index.html'))
     })
   }
+
+  app.use(BASE || '/', router)
 
   app.use((err, req, res, next) => {
     if (res.headersSent) return next(err)

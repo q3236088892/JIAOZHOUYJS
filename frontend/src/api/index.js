@@ -1,7 +1,8 @@
 import axios from 'axios'
 
+const base = import.meta.env.BASE_URL
 const api = axios.create({
-  baseURL: '/api'
+  baseURL: `${base}api`
 })
 
 api.interceptors.request.use((config) => {
@@ -18,8 +19,9 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('admin_token')
       localStorage.removeItem('admin_user')
-      if (window.location.pathname.startsWith('/admin')) {
-        window.location.href = '/login'
+      const adminPrefix = `${base}admin`
+      if (window.location.pathname.startsWith(adminPrefix)) {
+        window.location.href = `${base}login`
       }
     }
     return Promise.reject(error)

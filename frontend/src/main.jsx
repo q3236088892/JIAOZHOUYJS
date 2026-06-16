@@ -6,9 +6,11 @@ import './styles/index.css'
 
 document.title = '胶州市家居产业服务"一类事"'
 
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined
+
 ReactDOM.createRoot(document.getElementById('app')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={base}>
       <App />
     </BrowserRouter>
   </React.StrictMode>
